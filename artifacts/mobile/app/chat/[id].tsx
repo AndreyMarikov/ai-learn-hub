@@ -61,9 +61,6 @@ export default function ChatScreen() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [learningProfile, setLearningProfile] = useState<
-    LearningProfile | undefined
-  >(undefined);
 
   const initializedRef = useRef(false);
   const autoSentRef = useRef(false);
@@ -72,7 +69,6 @@ export default function ChatScreen() {
     if (topic && !initializedRef.current) {
       setLocalMessages(topic.messages);
       setIsReady(topic.isReady);
-      setLearningProfile(topic.learningProfile);
       initializedRef.current = true;
 
       if (
@@ -98,6 +94,10 @@ export default function ChatScreen() {
       let fullContent = "";
       let assistantMsgId = "";
 
+      const apiMessages = currentMessages
+        .filter((m) => m.role !== "widget")
+        .map((m) => ({ role: m.role, content: m.content }));
+
       try {
         const response = await fetch(`${baseUrl}/api/gemini/chat`, {
           method: "POST",
@@ -105,16 +105,10 @@ export default function ChatScreen() {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
           },
-          body: JSON.stringify({
-            messages: currentMessages.map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-          }),
+          body: JSON.stringify({ messages: apiMessages }),
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
         const reader = response.body?.getReader();
         if (!reader) throw new Error("No response body");
 
@@ -132,7 +126,6 @@ export default function ChatScreen() {
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
             const data = line.slice(6);
-
             try {
               const parsed = JSON.parse(data) as {
                 content?: string;
@@ -161,10 +154,7 @@ export default function ChatScreen() {
                       (m) => m.id === assistantMsgId,
                     );
                     if (idx !== -1) {
-                      updated[idx] = {
-                        ...updated[idx],
-                        content: fullContent,
-                      };
+                      updated[idx] = { ...updated[idx], content: fullContent };
                     }
                     return updated;
                   });
@@ -191,24 +181,35 @@ export default function ChatScreen() {
           });
         }
 
-        const finalMessages: Message[] = [
-          ...currentMessages,
-          {
-            id: assistantMsgId || generateUniqueId(),
-            role: "assistant" as const,
-            content: displayContent,
-            createdAt: new Date().toISOString(),
-          },
+        const aiMessage: Message = {
+          id: assistantMsgId || generateUniqueId(),
+          role: "assistant",
+          content: displayContent,
+          createdAt: new Date().toISOString(),
+        };
+
+        const messagesWithAI = [
+          ...currentMessages.filter((m) => m.role !== "widget"),
+          aiMessage,
         ];
 
         if (isReadyNow && profile) {
           setIsReady(true);
-          setLearningProfile(profile);
           markReady(id ?? "", profile);
-          saveMessages(id ?? "", finalMessages);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+          const widgetMsg: Message = {
+            id: generateUniqueId(),
+            role: "widget",
+            content: JSON.stringify(profile),
+            createdAt: new Date().toISOString(),
+          };
+
+          const allMessages = [...messagesWithAI, widgetMsg];
+          setLocalMessages(allMessages);
+          saveMessages(id ?? "", allMessages);
         } else {
-          saveMessages(id ?? "", finalMessages);
+          saveMessages(id ?? "", messagesWithAI);
         }
       } catch {
         setShowTyping(false);
@@ -220,7 +221,10 @@ export default function ChatScreen() {
           createdAt: new Date().toISOString(),
         };
         setLocalMessages((prev) => [...prev, errorMsg]);
-        saveMessages(id ?? "", [...currentMessages, errorMsg]);
+        saveMessages(id ?? "", [
+          ...currentMessages.filter((m) => m.role !== "widget"),
+          errorMsg,
+        ]);
       } finally {
         setIsStreaming(false);
         setShowTyping(false);
@@ -250,10 +254,8 @@ export default function ChatScreen() {
 
   const reversed = [...localMessages].reverse();
 
-  const topPadding =
-    Platform.OS === "web" ? 67 : insets.top;
-  const bottomPadding =
-    Platform.OS === "web" ? 34 : insets.bottom;
+  const topPadding = Platform.OS === "web" ? 67 : insets.top;
+  const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -291,24 +293,32 @@ export default function ChatScreen() {
         <FlatList
           data={reversed}
           keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <MessageBubble message={item} />}
+          renderItem={({ item }) => {
+            if (item.role === "widget") {
+              try {
+                const profile = JSON.parse(item.content) as LearningProfile;
+                return (
+                  <LearningReadyCard
+                    profile={profile}
+                    topicId={id ?? ""}
+                  />
+                );
+              } catch {
+                return null;
+              }
+            }
+            return <MessageBubble message={item} />;
+          }}
           inverted={!!localMessages.length}
           scrollEnabled={!!localMessages.length}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={showTyping ? <TypingIndicator /> : null}
-          ListFooterComponent={
-            isReady && learningProfile ? (
-              <LearningReadyCard profile={learningProfile} />
-            ) : null
-          }
           contentContainerStyle={styles.listContent}
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
         />
 
-        <View
-          style={[styles.inputArea, { paddingBottom: bottomPadding }]}
-        >
+        <View style={[styles.inputArea, { paddingBottom: bottomPadding }]}>
           <ChatInput
             onSend={handleSend}
             disabled={isStreaming}

@@ -9,7 +9,7 @@ import React, {
 
 export interface Message {
   id: string;
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "widget";
   content: string;
   createdAt: string;
 }
@@ -31,6 +31,7 @@ export interface Topic {
   messages: Message[];
   isReady: boolean;
   learningProfile?: LearningProfile;
+  widgetActive?: boolean;
 }
 
 interface TopicsContextValue {
@@ -41,6 +42,7 @@ interface TopicsContextValue {
   getTopic: (id: string) => Topic | undefined;
   saveMessages: (topicId: string, messages: Message[]) => void;
   markReady: (topicId: string, profile: LearningProfile) => void;
+  setWidgetActive: (topicId: string, active: boolean) => void;
 }
 
 const TopicsContext = createContext<TopicsContextValue | null>(null);
@@ -113,7 +115,19 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
   const markReady = useCallback(
     (topicId: string, profile: LearningProfile) => {
       const updated = topics.map((t) =>
-        t.id === topicId ? { ...t, isReady: true, learningProfile: profile } : t,
+        t.id === topicId
+          ? { ...t, isReady: true, learningProfile: profile }
+          : t,
+      );
+      persist(updated);
+    },
+    [topics, persist],
+  );
+
+  const setWidgetActive = useCallback(
+    (topicId: string, active: boolean) => {
+      const updated = topics.map((t) =>
+        t.id === topicId ? { ...t, widgetActive: active } : t,
       );
       persist(updated);
     },
@@ -122,7 +136,16 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <TopicsContext.Provider
-      value={{ topics, loading, createTopic, deleteTopic, getTopic, saveMessages, markReady }}
+      value={{
+        topics,
+        loading,
+        createTopic,
+        deleteTopic,
+        getTopic,
+        saveMessages,
+        markReady,
+        setWidgetActive,
+      }}
     >
       {children}
     </TopicsContext.Provider>

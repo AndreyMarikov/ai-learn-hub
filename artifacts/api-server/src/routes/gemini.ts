@@ -76,4 +76,62 @@ geminiRouter.post("/gemini/chat", async (req, res) => {
   }
 });
 
+geminiRouter.post("/gemini/snippets", async (req, res) => {
+  try {
+    const { profile, count = 20 } = req.body as {
+      profile: {
+        topic: string;
+        skillLevel: string;
+        learningStyle: string;
+        intensity: string;
+        goals: string;
+        notificationFrequency: string;
+      };
+      count?: number;
+    };
+
+    if (!profile?.topic) {
+      res.status(400).json({ error: "profile with topic required" });
+      return;
+    }
+
+    const prompt = `Generate exactly ${count} unique, bite-sized learning snippets for someone learning "${profile.topic}".
+
+Context:
+- Skill level: ${profile.skillLevel}
+- Learning style: ${profile.learningStyle} (${profile.intensity})
+- Goals: ${profile.goals}
+
+Requirements:
+- Each snippet must be 1-3 sentences maximum
+- Make them insightful, surprising, or practically useful
+- Vary the types: facts, tips, concepts, historical tidbits, practical examples
+- Calibrate to ${profile.skillLevel} level — not too basic or too advanced
+- Never repeat similar content across snippets
+- Do NOT include numbering or bullet points within the snippets
+
+Return ONLY a valid JSON array of strings, nothing else. No markdown, no explanation, no code blocks.
+Example: ["Snippet one here.", "Snippet two here.", "Snippet three here."]`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: { maxOutputTokens: 4096 },
+    });
+
+    const text = response.text ?? "[]";
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) {
+      res.status(500).json({ error: "Failed to parse snippets" });
+      return;
+    }
+
+    const snippets = JSON.parse(jsonMatch[0]) as string[];
+    res.json({ snippets });
+  } catch (error) {
+    req.log?.error({ error }, "Gemini snippets error");
+    res.status(500).json({ error: "Failed to generate snippets" });
+  }
+});
+
 export default geminiRouter;
