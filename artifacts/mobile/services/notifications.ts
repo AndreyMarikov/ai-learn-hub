@@ -5,9 +5,10 @@ import { Platform } from "react-native";
 const STORAGE_KEY = "@learnflow_notifications_v2";
 
 function frequencyToSeconds(frequency: string): number {
-  if (frequency.includes("several")) return 4 * 3600;
-  if (frequency.includes("once")) return 24 * 3600;
-  return 48 * 3600;
+  const f = frequency.toLowerCase();
+  if (f.includes("several")) return 4 * 3600;
+  if (f.includes("once") || f.includes("daily")) return 24 * 3600;
+  return 3 * 24 * 3600;
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
@@ -41,7 +42,11 @@ export async function scheduleSnippetNotifications(
           sound: true,
           data: { topicId },
         },
-        trigger: { seconds, repeats: false },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds,
+          repeats: false,
+        },
       });
       notificationIds.push(id);
     } catch {

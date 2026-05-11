@@ -95,7 +95,9 @@ export function ChatInput({
           style={[
             styles.sendButton,
             {
-              backgroundColor: canSend ? colors.primary : "rgba(16, 42, 41, 0.15)",
+              backgroundColor: canSend
+                ? colors.primary
+                : "rgba(16, 42, 41, 0.15)",
             },
           ]}
         >
@@ -126,6 +128,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    
   },
   input: {
     flex: 1,
