@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -64,11 +65,15 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
   const [topics, setTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const topicsRef = useRef<Topic[]>([]);
+
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY)
       .then((raw) => {
         if (raw) {
-          setTopics(JSON.parse(raw));
+          const loaded = JSON.parse(raw) as Topic[];
+          setTopics(loaded);
+          topicsRef.current = loaded;
         }
       })
       .catch(() => {})
@@ -76,6 +81,7 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const persist = useCallback((updated: Topic[]) => {
+    topicsRef.current = updated;
     setTopics(updated);
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated)).catch(() => {});
   }, []);
@@ -95,64 +101,64 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
         messages: [firstMsg],
         isReady: false,
       };
-      persist([topic, ...topics]);
+      persist([topic, ...topicsRef.current]);
       return topic;
     },
-    [topics, persist],
+    [persist],
   );
 
   const deleteTopic = useCallback(
     (id: string) => {
-      persist(topics.filter((t) => t.id !== id));
+      persist(topicsRef.current.filter((t) => t.id !== id));
     },
-    [topics, persist],
+    [persist],
   );
 
   const getTopic = useCallback(
-    (id: string) => topics.find((t) => t.id === id),
-    [topics],
+    (id: string) => topicsRef.current.find((t) => t.id === id),
+    [],
   );
 
   const saveMessages = useCallback(
     (topicId: string, messages: Message[]) => {
-      const updated = topics.map((t) =>
+      const updated = topicsRef.current.map((t) =>
         t.id === topicId ? { ...t, messages } : t,
       );
       persist(updated);
     },
-    [topics, persist],
+    [persist],
   );
 
   const markReady = useCallback(
     (topicId: string, profile: LearningProfile) => {
-      const updated = topics.map((t) =>
+      const updated = topicsRef.current.map((t) =>
         t.id === topicId
           ? { ...t, isReady: true, learningProfile: profile }
           : t,
       );
       persist(updated);
     },
-    [topics, persist],
+    [persist],
   );
 
   const setWidgetActive = useCallback(
     (topicId: string, active: boolean) => {
-      const updated = topics.map((t) =>
+      const updated = topicsRef.current.map((t) =>
         t.id === topicId ? { ...t, widgetActive: active } : t,
       );
       persist(updated);
     },
-    [topics, persist],
+    [persist],
   );
 
   const updateTopicTitle = useCallback(
     (topicId: string, title: string) => {
-      const updated = topics.map((t) =>
+      const updated = topicsRef.current.map((t) =>
         t.id === topicId ? { ...t, title } : t,
       );
       persist(updated);
     },
-    [topics, persist],
+    [persist],
   );
 
   return (

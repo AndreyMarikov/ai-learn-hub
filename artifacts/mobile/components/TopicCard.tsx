@@ -83,17 +83,18 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
       inputRange: [0, 1],
       outputRange: [80, 0],
     });
+
     return (
       <Animated.View
         style={[styles.deleteAction, { transform: [{ translateX }] }]}
       >
         <TouchableOpacity
-          style={[styles.swipeDeleteButton, { backgroundColor: "#e53935" }]}
+          style={[styles.deleteButton, { backgroundColor: "#e53935" }]}
           onPress={confirmDelete}
           activeOpacity={0.85}
         >
           <Feather name="trash-2" size={18} color="#fff" />
-          <Text style={styles.swipeDeleteLabel}>Delete</Text>
+          <Text style={styles.deleteLabel}>Delete</Text>
         </TouchableOpacity>
       </Animated.View>
     );
@@ -115,6 +116,7 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
       <Animated.View style={{ transform: [{ scale }] }}>
         <Pressable
           onPress={onPress}
+          onLongPress={Platform.OS === "web" ? confirmDelete : undefined}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           style={[
@@ -122,6 +124,7 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
             {
               backgroundColor: colors.card,
               borderColor: colors.border,
+              borderRadius: 18,
             },
           ]}
         >
@@ -148,7 +151,11 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
                     />
                   )}
                   {topic.widgetActive && (
-                    <Feather name="bell" size={11} color={colors.accent} />
+                    <Feather
+                      name="bell"
+                      size={11}
+                      color={colors.accent}
+                    />
                   )}
                 </View>
               </View>
@@ -160,18 +167,11 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
               </Text>
             </View>
 
-            <TouchableOpacity
-              onPress={confirmDelete}
-              hitSlop={10}
-              style={styles.trashButton}
-              activeOpacity={0.6}
-            >
-              <Feather
-                name="trash-2"
-                size={15}
-                color={colors.mutedForeground}
-              />
-            </TouchableOpacity>
+            <Feather
+              name="chevron-right"
+              size={16}
+              color={colors.mutedForeground}
+            />
           </View>
         </Pressable>
       </Animated.View>
@@ -181,7 +181,6 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
 
 const styles = StyleSheet.create({
   swipeContainer: {
-    marginHorizontal: 16,
     marginVertical: 5,
   },
   card: {
@@ -193,6 +192,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     elevation: 3,
+    marginHorizontal: 16,
   },
   row: {
     flexDirection: "row",
@@ -235,23 +235,21 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_400Regular",
   },
-  trashButton: {
-    padding: 4,
-  },
   deleteAction: {
     justifyContent: "center",
     alignItems: "flex-end",
     width: 80,
   },
-  swipeDeleteButton: {
+  deleteButton: {
     flex: 1,
     width: 80,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 18,
     gap: 3,
+    marginRight: 16
   },
-  swipeDeleteLabel: {
+  deleteLabel: {
     color: "#fff",
     fontSize: 11,
     fontFamily: "Inter_600SemiBold",
