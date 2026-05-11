@@ -1,0 +1,179 @@
+Build a polished mobile app for passive AI-powered learning.
+
+The app should feel like a modern AI chatbot app similar to ChatGPT or Claude, but focused on helping users learn passively throughout the day.
+
+The overall aesthetic should feel:
+
+* warm
+* calm
+* intelligent
+* minimal
+* modern
+
+DO NOT make it look like a traditional educational app.
+
+---
+
+## DESIGN
+
+Primary background color:
+#43b2ac
+
+Additional colors:
+
+* secondary cards: #5fc2bd
+* assistant messages: #f4f1ea
+* user messages: #1f6f6a
+* primary text: #102a29
+* accent color: #ffd166
+
+UI style:
+
+* rounded corners
+* soft shadows
+* smooth animations
+* spacious layout
+* floating message input
+* clean typography
+* modern AI-chat aesthetic
+
+The app should visually resemble:
+
+* ChatGPT
+* Claude
+* Perplexity mobile
+
+NOT:
+
+* Duolingo
+* Quizlet
+* classroom software
+
+---
+
+## CORE EXPERIENCE
+
+The user creates learning chats/topics.
+
+Examples:
+
+* “I want to learn Japanese.”
+* “Teach me investing.”
+* “I want to understand physics.”
+
+The AI then conversationally gathers missing information.
+
+The app MUST use a Gemini model (Google Gemini) as the AI engine for all conversations and learning logic.
+
+The Gemini model is responsible for:
+
+* understanding user intent
+* asking follow-up questions when needed
+* extracting structured learning preferences
+* determining when enough information has been collected
+* generating the final learning configuration
+
+Possible follow-up questions:
+
+* beginner/intermediate/advanced?
+* casual or serious?
+* practical or theoretical?
+* learning goals?
+* preferred frequency?
+* quiet hours for notifications?
+
+The conversation should feel natural, intelligent, and adaptive.
+
+Once enough information is collected, the AI responds:
+
+“Your learning flow is ready. If you want to change anything later, just tell me.”
+
+After that:
+
+* show a learning summary card
+* show an “Add Widget” button nearby
+
+---
+
+## IMPORTANT PRODUCT BEHAVIOR
+
+The app is NOT for active studying.
+
+The goal is passive learning throughout the day using:
+
+* widgets
+* notifications
+* small learning snippets
+* background reinforcement
+
+The onboarding chat is used to configure a personalized learning stream.
+
+The Gemini model should internally structure the user’s preferences into a learning profile containing:
+
+* topic
+* skill level
+* intensity
+* learning style
+* notification frequency
+* quiet hours
+* goals
+
+The user should NOT see raw JSON.
+
+---
+
+## MAIN FEATURES
+
+* Multiple chats/topics
+* Create new learning topic
+* Delete topics
+* Persistent chat history per topic
+* AI conversation per topic powered by Gemini
+* Smooth chat UX (typing indicators, streaming feel, scroll behavior)
+
+Each chat represents a separate learning stream.
+
+---
+
+## SCREENS
+
+1. Home / Sidebar
+
+* list of learning topics
+* create new topic button
+* delete topic support
+
+2. Chat Screen
+
+* AI chat interface
+* Gemini-powered responses
+* onboarding question flow
+* modern chat UX
+
+3. Learning Ready Screen State
+
+* learning summary card
+* “Add Widget” button
+* editable preferences
+
+---
+
+## IMPORTANT
+
+Prioritize:
+
+* excellent UX
+* clean architecture
+* reusable components
+* smooth animations
+* production-quality structure
+* scalable design for future features (widgets, notifications, learning delivery)
+
+DO NOT overbuild backend systems or analytics at this stage.
+
+Focus on:
+
+* chat experience
+* Gemini-driven onboarding flow
+* topic management
+* polished mobile UI
