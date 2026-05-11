@@ -16,6 +16,7 @@ import { NewTopicModal } from "@/components/NewTopicModal";
 import { TopicCard } from "@/components/TopicCard";
 import { useColors } from "@/hooks/useColors";
 import { useTopics } from "@/contexts/TopicsContext";
+import { cancelTopicNotifications } from "@/services/notifications";
 
 export default function HomeScreen() {
   const router = useRouter();
