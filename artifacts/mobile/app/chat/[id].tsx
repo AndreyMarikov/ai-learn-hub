@@ -31,11 +31,18 @@ function generateUniqueId(): string {
   return `msg-${Date.now()}-${msgCounter}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-function cleanLearningProfile(content: string): string {
+function cleanContent(content: string): string {
   return content
+    .replace(/\nTOPIC_TITLE:[^\n]*/g, "")
+    .replace(/TOPIC_TITLE:[^\n]*/g, "")
     .replace(/\nLEARNING_PROFILE:\{[^\n]*\}/g, "")
     .replace(/LEARNING_PROFILE:\{[^\n]*\}/g, "")
     .trim();
+}
+
+function extractTopicTitle(content: string): string | null {
+  const match = content.match(/TOPIC_TITLE:([^\n]+)/);
+  return match ? match[1].trim() : null;
 }
 
 function extractLearningProfile(content: string): LearningProfile | null {
@@ -53,7 +60,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const colors = useColors();
-  const { getTopic, saveMessages, markReady } = useTopics();
+  const { getTopic, saveMessages, markReady, updateTopicTitle } = useTopics();
 
   const topic = getTopic(id ?? "");
 
@@ -61,6 +68,7 @@ export default function ChatScreen() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [showTyping, setShowTyping] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [headerTitle, setHeaderTitle] = useState<string>("...");
 
   const initializedRef = useRef(false);
   const autoSentRef = useRef(false);
@@ -69,6 +77,7 @@ export default function ChatScreen() {
     if (topic && !initializedRef.current) {
       setLocalMessages(topic.messages);
       setIsReady(topic.isReady);
+      setHeaderTitle(topic.title);
       initializedRef.current = true;
 
       if (
@@ -77,13 +86,19 @@ export default function ChatScreen() {
         !autoSentRef.current
       ) {
         autoSentRef.current = true;
-        doStream(topic.messages);
+        doStream(topic.messages, true);
       }
     }
   }, [topic]);
 
+  useEffect(() => {
+    if (topic?.title && topic.title !== "...") {
+      setHeaderTitle(topic.title);
+    }
+  }, [topic?.title]);
+
   const doStream = useCallback(
-    async (currentMessages: Message[]) => {
+    async (currentMessages: Message[], isFirstMessage = false) => {
       if (isStreaming) return;
 
       setIsStreaming(true);
@@ -105,7 +120,7 @@ export default function ChatScreen() {
             "Content-Type": "application/json",
             Accept: "text/event-stream",
           },
-          body: JSON.stringify({ messages: apiMessages }),
+          body: JSON.stringify({ messages: apiMessages, isFirstMessage }),
         });
 
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -133,6 +148,7 @@ export default function ChatScreen() {
               };
               if (parsed.content) {
                 fullContent += parsed.content;
+                const displayContent = cleanContent(fullContent);
 
                 if (!assistantMsgId) {
                   setShowTyping(false);
@@ -143,7 +159,7 @@ export default function ChatScreen() {
                     {
                       id: newId,
                       role: "assistant",
-                      content: fullContent,
+                      content: displayContent,
                       createdAt: new Date().toISOString(),
                     },
                   ]);
@@ -154,7 +170,10 @@ export default function ChatScreen() {
                       (m) => m.id === assistantMsgId,
                     );
                     if (idx !== -1) {
-                      updated[idx] = { ...updated[idx], content: fullContent };
+                      updated[idx] = {
+                        ...updated[idx],
+                        content: displayContent,
+                      };
                     }
                     return updated;
                   });
@@ -164,8 +183,14 @@ export default function ChatScreen() {
           }
         }
 
+        const extractedTitle = extractTopicTitle(fullContent);
+        if (extractedTitle && isFirstMessage) {
+          updateTopicTitle(id ?? "", extractedTitle);
+          setHeaderTitle(extractedTitle);
+        }
+
         const profile = extractLearningProfile(fullContent);
-        const displayContent = cleanLearningProfile(fullContent);
+        const displayContent = cleanContent(fullContent);
         const isReadyNow =
           fullContent.includes("Your learning flow is ready") ||
           profile !== null;
@@ -213,9 +238,8 @@ export default function ChatScreen() {
         }
       } catch {
         setShowTyping(false);
-        const errorId = generateUniqueId();
         const errorMsg: Message = {
-          id: errorId,
+          id: generateUniqueId(),
           role: "assistant",
           content: "Sorry, something went wrong. Please try again.",
           createdAt: new Date().toISOString(),
@@ -230,7 +254,7 @@ export default function ChatScreen() {
         setShowTyping(false);
       }
     },
-    [id, isStreaming, saveMessages, markReady],
+    [id, isStreaming, saveMessages, markReady, updateTopicTitle],
   );
 
   const handleSend = useCallback(
@@ -247,7 +271,7 @@ export default function ChatScreen() {
 
       const updatedMessages = [...localMessages, userMsg];
       setLocalMessages(updatedMessages);
-      await doStream(updatedMessages);
+      await doStream(updatedMessages, false);
     },
     [localMessages, isStreaming, doStream],
   );
@@ -280,7 +304,7 @@ export default function ChatScreen() {
           style={[styles.headerTitle, { color: colors.foreground }]}
           numberOfLines={1}
         >
-          {topic?.title ?? "Chat"}
+          {headerTitle}
         </Text>
         <View style={{ width: 34 }} />
       </View>
@@ -297,12 +321,7 @@ export default function ChatScreen() {
             if (item.role === "widget") {
               try {
                 const profile = JSON.parse(item.content) as LearningProfile;
-                return (
-                  <LearningReadyCard
-                    profile={profile}
-                    topicId={id ?? ""}
-                  />
-                );
+                return <LearningReadyCard profile={profile} topicId={id ?? ""} />;
               } catch {
                 return null;
               }
@@ -323,9 +342,7 @@ export default function ChatScreen() {
             onSend={handleSend}
             disabled={isStreaming}
             placeholder={
-              isReady
-                ? "Ask anything or adjust your setup..."
-                : "Message..."
+              isReady ? "Ask anything or adjust your setup..." : "Message..."
             }
           />
         </View>
@@ -335,12 +352,8 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  flex: {
-    flex: 1,
-  },
+  screen: { flex: 1 },
+  flex: { flex: 1 },
   header: {
     flexDirection: "row",
     alignItems: "center",

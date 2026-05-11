@@ -16,7 +16,7 @@ import { useColors } from "@/hooks/useColors";
 interface NewTopicModalProps {
   visible: boolean;
   onClose: () => void;
-  onCreate: (title: string) => void;
+  onCreate: (initialMessage: string) => void;
 }
 
 const SUGGESTIONS = [
@@ -27,6 +27,10 @@ const SUGGESTIONS = [
   "Machine learning",
   "Stoic philosophy",
 ];
+
+function suggestionToMessage(s: string): string {
+  return `I want to learn ${s.toLowerCase()}.`;
+}
 
 export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps) {
   const colors = useColors();
@@ -39,12 +43,11 @@ export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps
     if (!trimmed) return;
     onCreate(trimmed);
     setText("");
-    onClose();
   };
 
   const handleSuggestion = (s: string) => {
-    setText(s);
-    inputRef.current?.focus();
+    onCreate(suggestionToMessage(s));
+    setText("");
   };
 
   return (
@@ -102,9 +105,13 @@ export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps
                 autoFocus
                 returnKeyType="done"
                 onSubmitEditing={handleCreate}
-                maxLength={100}
+                maxLength={200}
               />
             </View>
+
+            <Text style={[styles.suggestionsLabel, { color: colors.mutedForeground }]}>
+              Or pick a topic
+            </Text>
 
             <View style={styles.suggestions}>
               {SUGGESTIONS.map((s) => (
@@ -131,7 +138,9 @@ export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps
               style={[
                 styles.createButton,
                 {
-                  backgroundColor: text.trim() ? colors.primary : "rgba(31,111,106,0.35)",
+                  backgroundColor: text.trim()
+                    ? colors.primary
+                    : "rgba(31,111,106,0.35)",
                 },
               ]}
               onPress={handleCreate}
@@ -171,7 +180,7 @@ const styles = StyleSheet.create({
     margin: 8,
     padding: 24,
     paddingTop: 16,
-    gap: 16,
+    gap: 14,
   },
   handle: {
     width: 36,
@@ -189,7 +198,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Inter_400Regular",
     lineHeight: 20,
-    marginTop: -8,
+    marginTop: -6,
   },
   inputContainer: {
     borderWidth: 1,
@@ -201,6 +210,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
   },
+  suggestionsLabel: {
+    fontSize: 12,
+    fontFamily: "Inter_500Medium",
+    marginBottom: -6,
+  },
   suggestions: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -208,7 +222,7 @@ const styles = StyleSheet.create({
   },
   chip: {
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 20,
     borderWidth: 1,
   },
@@ -221,7 +235,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 4,
+    marginTop: 2,
   },
   createButtonText: {
     fontSize: 15,

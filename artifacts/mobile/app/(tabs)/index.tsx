@@ -28,11 +28,16 @@ export default function HomeScreen() {
   const topPadding = Platform.OS === "web" ? 67 : insets.top;
   const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
 
-  const handleCreate = (title: string) => {
+  const handleCreate = (initialMessage: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const topic = createTopic(title);
+    const topic = createTopic(initialMessage);
     setModalVisible(false);
     router.push(`/chat/${topic.id}`);
+  };
+
+  const handleDelete = async (id: string) => {
+    await cancelTopicNotifications(id);
+    deleteTopic(id);
   };
 
   const handleTopicPress = (id: string) => {
@@ -58,10 +63,7 @@ export default function HomeScreen() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setModalVisible(true);
           }}
-          style={[
-            styles.newButton,
-            { backgroundColor: colors.primary },
-          ]}
+          style={[styles.newButton, { backgroundColor: colors.primary }]}
           hitSlop={8}
         >
           <Feather name="plus" size={20} color={colors.primaryForeground} />
@@ -81,7 +83,9 @@ export default function HomeScreen() {
           <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
             Start learning something new
           </Text>
-          <Text style={[styles.emptySubtitle, { color: colors.mutedForeground }]}>
+          <Text
+            style={[styles.emptySubtitle, { color: colors.mutedForeground }]}
+          >
             Tap the + button to create your first learning stream
           </Text>
           <Pressable
@@ -111,7 +115,7 @@ export default function HomeScreen() {
               onPress={() => handleTopicPress(item.id)}
               onDelete={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                deleteTopic(item.id);
+                handleDelete(item.id);
               }}
             />
           )}

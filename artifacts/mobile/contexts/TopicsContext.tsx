@@ -37,12 +37,13 @@ export interface Topic {
 interface TopicsContextValue {
   topics: Topic[];
   loading: boolean;
-  createTopic: (title: string) => Topic;
+  createTopic: (initialMessage: string) => Topic;
   deleteTopic: (id: string) => void;
   getTopic: (id: string) => Topic | undefined;
   saveMessages: (topicId: string, messages: Message[]) => void;
   markReady: (topicId: string, profile: LearningProfile) => void;
   setWidgetActive: (topicId: string, active: boolean) => void;
+  updateTopicTitle: (topicId: string, title: string) => void;
 }
 
 const TopicsContext = createContext<TopicsContextValue | null>(null);
@@ -53,6 +54,10 @@ let idCounter = 0;
 function generateId(): string {
   idCounter++;
   return `topic-${Date.now()}-${idCounter}-${Math.random().toString(36).substr(2, 6)}`;
+}
+
+function generateUniqueId(): string {
+  return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
 export function TopicsProvider({ children }: { children: React.ReactNode }) {
@@ -76,12 +81,18 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const createTopic = useCallback(
-    (title: string): Topic => {
+    (initialMessage: string): Topic => {
+      const firstMsg: Message = {
+        id: generateUniqueId(),
+        role: "user",
+        content: initialMessage,
+        createdAt: new Date().toISOString(),
+      };
       const topic: Topic = {
         id: generateId(),
-        title: title.trim(),
+        title: "...",
         createdAt: new Date().toISOString(),
-        messages: [],
+        messages: [firstMsg],
         isReady: false,
       };
       persist([topic, ...topics]);
@@ -134,6 +145,16 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
     [topics, persist],
   );
 
+  const updateTopicTitle = useCallback(
+    (topicId: string, title: string) => {
+      const updated = topics.map((t) =>
+        t.id === topicId ? { ...t, title } : t,
+      );
+      persist(updated);
+    },
+    [topics, persist],
+  );
+
   return (
     <TopicsContext.Provider
       value={{
@@ -145,6 +166,7 @@ export function TopicsProvider({ children }: { children: React.ReactNode }) {
         saveMessages,
         markReady,
         setWidgetActive,
+        updateTopicTitle,
       }}
     >
       {children}
