@@ -101,23 +101,25 @@ geminiRouter.post("/gemini/snippets", async (req, res) => {
       return;
     }
 
-    const prompt = `Generate exactly ${count} unique, bite-sized learning snippets for someone learning "${profile.topic}".
+    const prompt = `Generate exactly ${count} push notification micro-facts about "${profile.topic}" for a learning app.
 
 Context:
 - Skill level: ${profile.skillLevel}
-- Learning style: ${profile.learningStyle} (${profile.intensity})
+- Style: ${profile.learningStyle} (${profile.intensity})
 - Goals: ${profile.goals}
 
 Requirements:
-- Each snippet must be 1-3 sentences maximum
-- Make them insightful, surprising, or practically useful
-- Vary the types: facts, tips, concepts, historical tidbits, practical examples
-- Calibrate to ${profile.skillLevel} level — not too basic or too advanced
-- Never repeat similar content across snippets
-- Do NOT include numbering or bullet points within the snippets
+- Each fact is ONE short sentence, max 15 words
+- Sound like a surprising fun fact, never a boring textbook
+- Weave in 1-2 relevant emojis naturally within the text
+- Vary types: surprising facts, counterintuitive truths, quick tips, historical moments, "did you know" hooks
+- Calibrate to ${profile.skillLevel} — neither too basic nor too advanced
+- Never repeat similar content
 
-Return ONLY a valid JSON array of strings, nothing else. No markdown, no explanation, no code blocks.
-Example: ["Snippet one here.", "Snippet two here.", "Snippet three here."]`;
+Also pick ONE emoji that best represents this topic overall (e.g. ⚛️ for quantum physics, 🗾 for Japanese, etc.)
+
+Return ONLY valid JSON in this exact format, no markdown, no explanation:
+{"emoji":"⚛️","snippets":["Fact one here 🔬","Fact two here ⚡"]}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -125,18 +127,62 @@ Example: ["Snippet one here.", "Snippet two here.", "Snippet three here."]`;
       config: { maxOutputTokens: 4096 },
     });
 
-    const text = response.text ?? "[]";
-    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    const text = response.text ?? "{}";
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       res.status(500).json({ error: "Failed to parse snippets" });
       return;
     }
 
-    const snippets = JSON.parse(jsonMatch[0]) as string[];
-    res.json({ snippets });
+    const parsed = JSON.parse(jsonMatch[0]) as {
+      emoji?: string;
+      snippets?: string[];
+    };
+    res.json({
+      snippets: parsed.snippets ?? [],
+      topicEmoji: parsed.emoji ?? "📚",
+    });
   } catch (error) {
     req.log?.error({ error }, "Gemini snippets error");
     res.status(500).json({ error: "Failed to generate snippets" });
+  }
+});
+
+geminiRouter.post("/gemini/topic-image", async (req, res) => {
+  try {
+    const { topic } = req.body as { topic: string };
+    if (!topic) {
+      res.status(400).json({ error: "topic required" });
+      return;
+    }
+
+    const prompt = `Create a vivid, colorful illustration for a mobile learning app about "${topic}". The image should be: modern, minimal, visually striking, icon-like. Bold colors, no text, no letters, no words. Square composition. Think app icon meets editorial illustration.`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-preview-image-generation",
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      config: {
+        responseModalities: ["IMAGE"],
+      } as Record<string, unknown>,
+    });
+
+    const parts = response.candidates?.[0]?.content?.parts ?? [];
+    const imagePart = parts.find(
+      (p: Record<string, unknown>) => p.inlineData != null,
+    ) as { inlineData: { data: string; mimeType: string } } | undefined;
+
+    if (!imagePart?.inlineData?.data) {
+      res.status(404).json({ error: "No image generated" });
+      return;
+    }
+
+    res.json({
+      imageBase64: imagePart.inlineData.data,
+      mimeType: imagePart.inlineData.mimeType ?? "image/png",
+    });
+  } catch (error) {
+    req.log?.error({ error }, "Gemini image error");
+    res.status(500).json({ error: "Failed to generate image" });
   }
 });
 

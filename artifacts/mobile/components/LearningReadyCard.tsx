@@ -47,17 +47,21 @@ function ProfileRow({
   );
 }
 
+type LoadingStage = "idle" | "snippets" | "image" | "scheduling";
+
 export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) {
   const colors = useColors();
   const { topics, setWidgetActive } = useTopics();
   const topic = topics.find((t) => t.id === topicId);
   const isActive = topic?.widgetActive ?? false;
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingStage, setLoadingStage] = useState<LoadingStage>("idle");
   const [snippetInfo, setSnippetInfo] = useState<{
     count: number;
     scheduledCount: number;
   } | null>(null);
+
+  const isLoading = loadingStage !== "idle";
 
   useEffect(() => {
     if (isActive) {
@@ -67,6 +71,13 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
     }
   }, [isActive, topicId]);
 
+  const loadingLabel = {
+    idle: "Add widget & notifications",
+    snippets: "Generating snippets...",
+    image: "Creating image...",
+    scheduling: "Scheduling...",
+  }[loadingStage];
+
   const handleAddWidget = async () => {
     if (Platform.OS === "web") {
       Alert.alert(
@@ -75,7 +86,7 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
       );
       return;
     }
-    setIsLoading(true);
+    setLoadingStage("snippets");
     try {
       const granted = await requestNotificationPermissions();
       if (!granted) {
@@ -88,20 +99,47 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
 
       const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
       const baseUrl = domain ? `https://${domain}` : "";
-      const response = await fetch(`${baseUrl}/api/gemini/snippets`, {
+
+      const snippetsRes = await fetch(`${baseUrl}/api/gemini/snippets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ profile, count: 20 }),
       });
+      if (!snippetsRes.ok) throw new Error("Failed to generate snippets");
+      const { snippets, topicEmoji } = (await snippetsRes.json()) as {
+        snippets: string[];
+        topicEmoji: string;
+      };
 
-      if (!response.ok) throw new Error("Failed to generate snippets");
-      const { snippets } = (await response.json()) as { snippets: string[] };
+      setLoadingStage("image");
+      let imageBase64: string | undefined;
+      let imageMimeType: string | undefined;
+      try {
+        const imageRes = await fetch(`${baseUrl}/api/gemini/topic-image`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ topic: profile.topic }),
+        });
+        if (imageRes.ok) {
+          const imageData = (await imageRes.json()) as {
+            imageBase64: string;
+            mimeType: string;
+          };
+          imageBase64 = imageData.imageBase64;
+          imageMimeType = imageData.mimeType;
+        }
+      } catch {
+      }
 
+      setLoadingStage("scheduling");
       const ids = await scheduleSnippetNotifications(
         topicId,
         profile.topic,
         snippets,
         profile.notificationFrequency,
+        topicEmoji,
+        imageBase64,
+        imageMimeType,
       );
 
       setWidgetActive(topicId, true);
@@ -110,7 +148,7 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
     } catch {
       Alert.alert("Error", "Failed to set up learning snippets. Please try again.");
     } finally {
-      setIsLoading(false);
+      setLoadingStage("idle");
     }
   };
 
@@ -165,27 +203,11 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
 
       <View style={styles.profileGrid}>
         <ProfileRow icon="book" label="Topic" value={profile.topic} />
-        <ProfileRow
-          icon="bar-chart-2"
-          label="Level"
-          value={profile.skillLevel}
-        />
-        <ProfileRow
-          icon="zap"
-          label="Style"
-          value={profile.learningStyle}
-        />
-        <ProfileRow
-          icon="clock"
-          label="Frequency"
-          value={profile.notificationFrequency}
-        />
+        <ProfileRow icon="bar-chart-2" label="Level" value={profile.skillLevel} />
+        <ProfileRow icon="zap" label="Style" value={profile.learningStyle} />
+        <ProfileRow icon="clock" label="Frequency" value={profile.notificationFrequency} />
         {profile.quietHours !== "none" && (
-          <ProfileRow
-            icon="moon"
-            label="Quiet hours"
-            value={profile.quietHours}
-          />
+          <ProfileRow icon="moon" label="Quiet hours" value={profile.quietHours} />
         )}
       </View>
 
@@ -203,9 +225,7 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
             </Text>
           </View>
           <TouchableOpacity onPress={handleRemoveWidget} activeOpacity={0.7}>
-            <Text
-              style={[styles.removeText, { color: colors.mutedForeground }]}
-            >
+            <Text style={[styles.removeText, { color: colors.mutedForeground }]}>
               Remove notifications
             </Text>
           </TouchableOpacity>
@@ -230,12 +250,9 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
             <Feather name="bell" size={14} color={colors.accentForeground} />
           )}
           <Text
-            style={[
-              styles.widgetButtonText,
-              { color: colors.accentForeground },
-            ]}
+            style={[styles.widgetButtonText, { color: colors.accentForeground }]}
           >
-            {isLoading ? "Setting up..." : "Add widget & notifications"}
+            {loadingLabel}
           </Text>
         </TouchableOpacity>
       )}
