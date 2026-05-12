@@ -62,6 +62,59 @@ export async function scheduleSnippetNotifications(
   return notificationIds;
 }
 
+export async function appendSnippetNotifications(
+  topicId: string,
+  topicTitle: string,
+  snippets: string[],
+  frequency: string,
+  topicEmoji?: string,
+): Promise<string[]> {
+  if (Platform.OS === "web") return [];
+
+  const intervalSeconds = frequencyToSeconds(frequency);
+  const emoji = topicEmoji ?? "📚";
+  const notifTitle = `${emoji} ${topicTitle}`;
+  const newIds: string[] = [];
+
+  const stored = await getStoredMap();
+  const entry = stored[topicId];
+  const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
+  const existingCount = entry
+    ? allScheduled.filter((n) => entry.ids.includes(n.identifier)).length
+    : 0;
+
+  for (let i = 0; i < snippets.length; i++) {
+    const seconds = (existingCount + i + 1) * intervalSeconds;
+    try {
+      const id = await Notifications.scheduleNotificationAsync({
+        content: {
+          title: notifTitle,
+          body: snippets[i],
+          sound: true,
+          data: { topicId },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds,
+          repeats: false,
+        },
+      });
+      newIds.push(id);
+    } catch {
+    }
+  }
+
+  if (entry) {
+    entry.ids.push(...newIds);
+    entry.count += snippets.length;
+    stored[topicId] = entry;
+  } else {
+    stored[topicId] = { ids: newIds, count: snippets.length };
+  }
+  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  return newIds;
+}
+
 export async function cancelTopicNotifications(topicId: string): Promise<void> {
   if (Platform.OS === "web") return;
   const stored = await getStoredMap();

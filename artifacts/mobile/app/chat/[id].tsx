@@ -24,6 +24,10 @@ import {
   type LearningProfile,
   type Message,
 } from "@/contexts/TopicsContext";
+import {
+  appendSnippetNotifications,
+  getTopicNotificationInfo,
+} from "@/services/notifications";
 
 let msgCounter = 0;
 function generateUniqueId(): string {
@@ -96,6 +100,39 @@ export default function ChatScreen() {
       setHeaderTitle(topic.title);
     }
   }, [topic?.title]);
+
+  useEffect(() => {
+    if (!topic?.isReady || !topic?.widgetActive || !topic?.learningProfile) return;
+    const profile = topic.learningProfile;
+    const topicId = topic.id;
+
+    getTopicNotificationInfo(topicId).then(async (info) => {
+      if (!info || info.scheduledCount >= 15) return;
+
+      const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+      const baseUrl = domain ? `https://${domain}` : "";
+      try {
+        const res = await fetch(`${baseUrl}/api/gemini/snippets`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ profile }),
+        });
+        if (!res.ok) return;
+        const { snippets, topicEmoji } = (await res.json()) as {
+          snippets: string[];
+          topicEmoji: string;
+        };
+        await appendSnippetNotifications(
+          topicId,
+          profile.topic,
+          snippets,
+          profile.notificationFrequency,
+          topicEmoji,
+        );
+      } catch {
+      }
+    });
+  }, [topic?.id, topic?.isReady, topic?.widgetActive]);
 
   const doStream = useCallback(
     async (currentMessages: Message[], isFirstMessage = false) => {
