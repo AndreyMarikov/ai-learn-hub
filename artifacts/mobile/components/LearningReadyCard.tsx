@@ -102,7 +102,7 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
       const snippetsRes = await fetch(`${baseUrl}/api/gemini/snippets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile, count: 20 }),
+        body: JSON.stringify({ profile }),
       });
       if (!snippetsRes.ok) throw new Error("Failed to generate snippets");
       const { snippets, topicEmoji } = (await snippetsRes.json()) as {
