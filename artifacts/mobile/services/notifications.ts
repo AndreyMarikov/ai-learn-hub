@@ -61,7 +61,7 @@ export async function scheduleSnippetNotifications(
   }
 
   for (let i = 0; i < snippets.length; i++) {
-    const seconds = (i + 1) * intervalSeconds;
+    const seconds = i === 0 ? 5 : i * intervalSeconds;
     try {
       const attachments =
         imageLocalUri && Platform.OS === "ios"
