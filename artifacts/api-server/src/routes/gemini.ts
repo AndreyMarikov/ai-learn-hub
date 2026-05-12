@@ -148,42 +148,5 @@ Return ONLY valid JSON in this exact format, no markdown, no explanation:
   }
 });
 
-geminiRouter.post("/gemini/topic-image", async (req, res) => {
-  try {
-    const { topic } = req.body as { topic: string };
-    if (!topic) {
-      res.status(400).json({ error: "topic required" });
-      return;
-    }
-
-    const prompt = `Create a vivid, colorful illustration for a mobile learning app about "${topic}". The image should be: modern, minimal, visually striking, icon-like. Bold colors, no text, no letters, no words. Square composition. Think app icon meets editorial illustration.`;
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash-preview-image-generation",
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-      config: {
-        responseModalities: ["IMAGE"],
-      } as Record<string, unknown>,
-    });
-
-    const parts = response.candidates?.[0]?.content?.parts ?? [];
-    const imagePart = parts.find(
-      (p: Record<string, unknown>) => p.inlineData != null,
-    ) as { inlineData: { data: string; mimeType: string } } | undefined;
-
-    if (!imagePart?.inlineData?.data) {
-      res.status(404).json({ error: "No image generated" });
-      return;
-    }
-
-    res.json({
-      imageBase64: imagePart.inlineData.data,
-      mimeType: imagePart.inlineData.mimeType ?? "image/png",
-    });
-  } catch (error) {
-    req.log?.error({ error }, "Gemini image error");
-    res.status(500).json({ error: "Failed to generate image" });
-  }
-});
 
 export default geminiRouter;

@@ -47,7 +47,7 @@ function ProfileRow({
   );
 }
 
-type LoadingStage = "idle" | "snippets" | "image" | "scheduling";
+type LoadingStage = "idle" | "snippets" | "scheduling";
 
 export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) {
   const colors = useColors();
@@ -74,7 +74,6 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
   const loadingLabel = {
     idle: "Add widget & notifications",
     snippets: "Generating snippets...",
-    image: "Creating image...",
     scheduling: "Scheduling...",
   }[loadingStage];
 
@@ -111,26 +110,6 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
         topicEmoji: string;
       };
 
-      setLoadingStage("image");
-      let imageBase64: string | undefined;
-      let imageMimeType: string | undefined;
-      try {
-        const imageRes = await fetch(`${baseUrl}/api/gemini/topic-image`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ topic: profile.topic }),
-        });
-        if (imageRes.ok) {
-          const imageData = (await imageRes.json()) as {
-            imageBase64: string;
-            mimeType: string;
-          };
-          imageBase64 = imageData.imageBase64;
-          imageMimeType = imageData.mimeType;
-        }
-      } catch {
-      }
-
       setLoadingStage("scheduling");
       const ids = await scheduleSnippetNotifications(
         topicId,
@@ -138,8 +117,6 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
         snippets,
         profile.notificationFrequency,
         topicEmoji,
-        imageBase64,
-        imageMimeType,
       );
 
       setWidgetActive(topicId, true);
