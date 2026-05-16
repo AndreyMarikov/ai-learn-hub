@@ -32,7 +32,11 @@ function suggestionToMessage(s: string): string {
   return `I want to learn ${s.toLowerCase()}.`;
 }
 
-export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps) {
+export function NewTopicModal({
+  visible,
+  onClose,
+  onCreate,
+}: NewTopicModalProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const [text, setText] = useState("");
@@ -67,7 +71,7 @@ export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps
             style={[
               styles.sheet,
               {
-                backgroundColor: colors.card,
+                backgroundColor: colors.background,
                 paddingBottom: insets.bottom + 16,
                 borderRadius: 28,
               },
@@ -80,14 +84,15 @@ export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps
               What do you want to learn?
             </Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              Describe your topic and we'll set up your personal learning stream
+              Describe your topic and we'll set up your personal learning
+              stream.
             </Text>
 
             <View
               style={[
                 styles.inputContainer,
                 {
-                  backgroundColor: "rgba(255,255,255,0.3)",
+                  backgroundColor: colors.card,
                   borderColor: colors.border,
                 },
               ]}
@@ -109,8 +114,13 @@ export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps
               />
             </View>
 
-            <Text style={[styles.suggestionsLabel, { color: colors.mutedForeground }]}>
-              Or pick a topic
+            <Text
+              style={[
+                styles.suggestionsLabel,
+                { color: colors.mutedForeground },
+              ]}
+            >
+              Or pick a topic:
             </Text>
 
             <View style={styles.suggestions}>
@@ -120,7 +130,7 @@ export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: "rgba(255,255,255,0.25)",
+                      backgroundColor: colors.card,
                       borderColor: colors.border,
                     },
                   ]}
@@ -140,7 +150,7 @@ export function NewTopicModal({ visible, onClose, onCreate }: NewTopicModalProps
                 {
                   backgroundColor: text.trim()
                     ? colors.primary
-                    : "rgba(31,111,106,0.35)",
+                    : "rgba(37,23,18,0.35)",
                 },
               ]}
               onPress={handleCreate}
@@ -192,7 +202,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 20,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "serif",
   },
   subtitle: {
     fontSize: 14,

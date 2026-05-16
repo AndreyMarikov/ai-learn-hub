@@ -61,7 +61,7 @@ export function ChatInput({
       style={[
         styles.container,
         {
-          backgroundColor: "rgba(255,255,255,0.18)",
+          backgroundColor: colors.card,
           borderColor: colors.border,
         },
       ]}
@@ -118,22 +118,15 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
     marginHorizontal: 16,
     marginVertical: 10,
-    borderRadius: 26,
+    borderRadius: 30,
     borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingLeft: 16,
+    padding: 8,
     gap: 10,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-    
   },
   input: {
     flex: 1,
     fontSize: 15,
-    lineHeight: 22,
     maxHeight: 120,
     paddingTop: Platform.OS === "ios" ? 2 : 0,
   },

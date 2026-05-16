@@ -12,7 +12,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ChatInput } from "@/components/ChatInput";
 import { LearningReadyCard } from "@/components/LearningReadyCard";
@@ -62,7 +61,6 @@ function extractLearningProfile(content: string): LearningProfile | null {
 export default function ChatScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const colors = useColors();
   const { getTopic, saveMessages, markReady, updateTopicTitle } = useTopics();
 
@@ -102,7 +100,8 @@ export default function ChatScreen() {
   }, [topic?.title]);
 
   useEffect(() => {
-    if (!topic?.isReady || !topic?.widgetActive || !topic?.learningProfile) return;
+    if (!topic?.isReady || !topic?.widgetActive || !topic?.learningProfile)
+      return;
     const profile = topic.learningProfile;
     const topicId = topic.id;
 
@@ -129,8 +128,7 @@ export default function ChatScreen() {
           profile.notificationFrequency,
           topicEmoji,
         );
-      } catch {
-      }
+      } catch {}
     });
   }, [topic?.id, topic?.isReady, topic?.widgetActive]);
 
@@ -315,8 +313,8 @@ export default function ChatScreen() {
 
   const reversed = [...localMessages].reverse();
 
-  const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPadding = Platform.OS === "web" ? 67 : 0;
+  const bottomPadding = Platform.OS === "web" ? 34 : 0;
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -349,7 +347,7 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior="padding"
-        keyboardVerticalOffset={0}
+        keyboardVerticalOffset={30}
       >
         <FlatList
           data={reversed}
@@ -358,7 +356,9 @@ export default function ChatScreen() {
             if (item.role === "widget") {
               try {
                 const profile = JSON.parse(item.content) as LearningProfile;
-                return <LearningReadyCard profile={profile} topicId={id ?? ""} />;
+                return (
+                  <LearningReadyCard profile={profile} topicId={id ?? ""} />
+                );
               } catch {
                 return null;
               }
@@ -374,7 +374,7 @@ export default function ChatScreen() {
           keyboardShouldPersistTaps="handled"
         />
 
-        <View style={[styles.inputArea, { paddingBottom: bottomPadding }]}>
+        <View style={styles.inputArea}>
           <ChatInput
             onSend={handleSend}
             disabled={isStreaming}
@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 16,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "serif",
     textAlign: "center",
   },
   listContent: {

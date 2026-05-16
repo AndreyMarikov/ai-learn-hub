@@ -10,7 +10,6 @@ import {
   Text,
   View,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { NewTopicModal } from "@/components/NewTopicModal";
 import { TopicCard } from "@/components/TopicCard";
@@ -21,12 +20,11 @@ import { cancelTopicNotifications } from "@/services/notifications";
 export default function HomeScreen() {
   const router = useRouter();
   const colors = useColors();
-  const insets = useSafeAreaInsets();
   const { topics, createTopic, deleteTopic, loading } = useTopics();
   const [modalVisible, setModalVisible] = useState(false);
 
-  const topPadding = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPadding = Platform.OS === "web" ? 34 : insets.bottom;
+  const topPadding = Platform.OS === "web" ? 67 : 0;
+  const bottomPadding = Platform.OS === "web" ? 34 : 0;
 
   const handleCreate = (initialMessage: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -47,14 +45,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View
-        style={[
-          styles.header,
-          {
-            paddingTop: topPadding + 10,
-          },
-        ]}
-      >
+      <View style={[styles.header]}>
         <Text style={[styles.appName, { color: colors.foreground }]}>
           LearnFlow
         </Text>
@@ -96,10 +87,7 @@ export default function HomeScreen() {
             }}
           >
             <Text
-              style={[
-                styles.emptyButtonText,
-                { color: colors.primaryForeground },
-              ]}
+              style={[styles.emptyButtonText, { color: colors.background }]}
             >
               New topic
             </Text>
@@ -119,10 +107,6 @@ export default function HomeScreen() {
               }}
             />
           )}
-          contentContainerStyle={[
-            styles.listContent,
-            { paddingBottom: bottomPadding + 16 },
-          ]}
           showsVerticalScrollIndicator={false}
           scrollEnabled={!!topics.length}
         />
@@ -146,11 +130,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 16,
+    paddingVertical: 10,
   },
   appName: {
     fontSize: 28,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "serif",
     letterSpacing: -0.5,
   },
   newButton: {
@@ -164,9 +148,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 6,
     elevation: 4,
-  },
-  listContent: {
-    paddingTop: 8,
   },
   emptyState: {
     flex: 1,
@@ -184,8 +165,8 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontFamily: "Inter_600SemiBold",
+    fontSize: 32,
+    fontFamily: "serif",
     textAlign: "center",
   },
   emptySubtitle: {

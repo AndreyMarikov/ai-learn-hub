@@ -11,10 +11,11 @@ import * as Notifications from "expo-notifications";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
-import { Platform } from "react-native";
+import { Platform, StatusBar } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { useColors } from "@/hooks/useColors";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TopicsProvider } from "@/contexts/TopicsContext";
@@ -53,6 +54,7 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+  const colors = useColors();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -64,17 +66,23 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <TopicsProvider>
-            <GestureHandlerRootView>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </TopicsProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
+      <SafeAreaView style={{ backgroundColor: "transparent", flex: 1 }}>
+        <StatusBar
+          barStyle="dark-content"
+          backgroundColor={colors.background}
+        />
+        <ErrorBoundary>
+          <QueryClientProvider client={queryClient}>
+            <TopicsProvider>
+              <GestureHandlerRootView>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </TopicsProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }

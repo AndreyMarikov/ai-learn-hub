@@ -34,8 +34,7 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
     ? lastNonWidgetMessage.content
         .replace(/LEARNING_PROFILE:\{.*\}/g, "")
         .trim()
-        .slice(0, 70) +
-      (lastNonWidgetMessage.content.length > 70 ? "..." : "")
+        .slice(0, 70) + (lastNonWidgetMessage.content.length > 70 ? "..." : "")
     : "Tap to start your learning journey";
 
   const confirmDelete = () => {
@@ -122,9 +121,7 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
           style={[
             styles.card,
             {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              borderRadius: 18,
+              backgroundColor: "transparent",
             },
           ]}
         >
@@ -151,11 +148,7 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
                     />
                   )}
                   {topic.widgetActive && (
-                    <Feather
-                      name="bell"
-                      size={11}
-                      color={colors.accent}
-                    />
+                    <Feather name="bell" size={11} color={colors.accent} />
                   )}
                 </View>
               </View>
@@ -180,19 +173,9 @@ export function TopicCard({ topic, onPress, onDelete }: TopicCardProps) {
 }
 
 const styles = StyleSheet.create({
-  swipeContainer: {
-    marginVertical: 5,
-  },
   card: {
-    padding: 16,
-    borderWidth: 1,
-    borderRadius: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    marginHorizontal: 16,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
   },
   row: {
     flexDirection: "row",
@@ -218,7 +201,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "serif",
     flex: 1,
   },
   badges: {
@@ -247,7 +230,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 18,
     gap: 3,
-    marginRight: 16
   },
   deleteLabel: {
     color: "#fff",

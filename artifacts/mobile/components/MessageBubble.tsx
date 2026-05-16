@@ -29,15 +29,15 @@ export function MessageBubble({ message }: MessageBubbleProps) {
         style={[
           styles.bubble,
           isUser
-            ? [styles.userBubble, { backgroundColor: colors.userMessage }]
-            : [styles.assistantBubble, { backgroundColor: colors.assistantMessage }],
+            ? [styles.userBubble, { backgroundColor: "rgba(0,0,0,0.07)" }]
+            : [styles.assistantBubble, { backgroundColor: colors.card }],
         ]}
       >
         <Text
           style={[
             styles.text,
             {
-              color: isUser ? colors.userMessageText : colors.assistantMessageText,
+              color: colors.messageText,
             },
           ]}
         >
@@ -63,11 +63,7 @@ const styles = StyleSheet.create({
     maxWidth: "82%",
     paddingHorizontal: 16,
     paddingVertical: 11,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    boxShadow: "0 1px 2px #261c140a, 0 8px 24px -12px #261c1414",
   },
   userBubble: {
     borderRadius: 20,
