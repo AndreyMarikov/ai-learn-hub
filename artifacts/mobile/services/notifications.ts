@@ -1,4 +1,5 @@
 import * as Notifications from "expo-notifications";
+import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
@@ -9,6 +10,23 @@ function frequencyToSeconds(frequency: string): number {
   if (f.includes("several")) return 4 * 3600;
   if (f.includes("once") || f.includes("daily")) return 24 * 3600;
   return 3 * 24 * 3600;
+}
+
+async function saveImageToTemp(
+  base64Data: string,
+  mimeType: string,
+): Promise<string | null> {
+  try {
+    const ext = mimeType.includes("png") ? "png" : "jpg";
+    const filename = `learnflow_notif_${Date.now()}.${ext}`;
+    const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+    await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return fileUri;
+  } catch {
+    return null;
+  }
 }
 
 export async function requestNotificationPermissions(): Promise<boolean> {
@@ -25,6 +43,7 @@ export async function scheduleSnippetNotifications(
   snippets: string[],
   frequency: string,
   topicEmoji?: string,
+  snippetImages?: Array<{ base64: string; mimeType: string } | null>,
 ): Promise<string[]> {
   if (Platform.OS === "web") return [];
 
@@ -37,14 +56,29 @@ export async function scheduleSnippetNotifications(
 
   for (let i = 0; i < snippets.length; i++) {
     const seconds = i === 0 ? 5 : i * intervalSeconds;
+    const imageEntry = snippetImages?.[i] ?? null;
+
+    let localImageUri: string | null = null;
+    if (imageEntry) {
+      localImageUri = await saveImageToTemp(imageEntry.base64, imageEntry.mimeType);
+    }
+
     try {
+      const content: Notifications.NotificationContentInput = {
+        title: notifTitle,
+        body: snippets[i],
+        sound: true,
+        data: { topicId },
+      };
+
+      if (localImageUri && Platform.OS === "ios") {
+        (content as Record<string, unknown>).attachments = [
+          { url: localImageUri },
+        ];
+      }
+
       const id = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: notifTitle,
-          body: snippets[i],
-          sound: true,
-          data: { topicId },
-        },
+        content,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds,
@@ -68,6 +102,7 @@ export async function appendSnippetNotifications(
   snippets: string[],
   frequency: string,
   topicEmoji?: string,
+  snippetImages?: Array<{ base64: string; mimeType: string } | null>,
 ): Promise<string[]> {
   if (Platform.OS === "web") return [];
 
@@ -85,14 +120,29 @@ export async function appendSnippetNotifications(
 
   for (let i = 0; i < snippets.length; i++) {
     const seconds = (existingCount + i + 1) * intervalSeconds;
+    const imageEntry = snippetImages?.[i] ?? null;
+
+    let localImageUri: string | null = null;
+    if (imageEntry) {
+      localImageUri = await saveImageToTemp(imageEntry.base64, imageEntry.mimeType);
+    }
+
     try {
+      const content: Notifications.NotificationContentInput = {
+        title: notifTitle,
+        body: snippets[i],
+        sound: true,
+        data: { topicId },
+      };
+
+      if (localImageUri && Platform.OS === "ios") {
+        (content as Record<string, unknown>).attachments = [
+          { url: localImageUri },
+        ];
+      }
+
       const id = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: notifTitle,
-          body: snippets[i],
-          sound: true,
-          data: { topicId },
-        },
+        content,
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds,

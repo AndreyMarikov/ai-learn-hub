@@ -27,6 +27,7 @@ import {
   appendSnippetNotifications,
   getTopicNotificationInfo,
 } from "@/services/notifications";
+import { getDeviceId } from "@/services/deviceId";
 
 let msgCounter = 0;
 function generateUniqueId(): string {
@@ -122,12 +123,53 @@ export default function ChatScreen() {
           snippets: string[];
           topicEmoji: string;
         };
+
+        const deviceId = await getDeviceId();
+        const IMAGE_SLOTS = 3;
+        const imageRequests = snippets
+          .slice(0, IMAGE_SLOTS)
+          .map((snippet) =>
+            fetch(`${baseUrl}/api/gemini/image`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                userId: deviceId,
+                topic: profile.topic,
+                snippetText: snippet,
+              }),
+            })
+              .then((r) => (r.ok ? r.json() : null))
+              .then(
+                (
+                  data: {
+                    imageData: string | null;
+                    mimeType: string | null;
+                    limitReached: boolean;
+                  } | null,
+                ) =>
+                  data?.imageData && data?.mimeType
+                    ? { base64: data.imageData, mimeType: data.mimeType }
+                    : null,
+              )
+              .catch(() => null),
+          );
+
+        const images = await Promise.all(imageRequests);
+        const snippetImages: Array<{
+          base64: string;
+          mimeType: string;
+        } | null> = [
+          ...images,
+          ...Array(Math.max(0, snippets.length - IMAGE_SLOTS)).fill(null),
+        ];
+
         await appendSnippetNotifications(
           topicId,
           profile.topic,
           snippets,
           profile.notificationFrequency,
           topicEmoji,
+          snippetImages,
         );
       } catch {}
     });
