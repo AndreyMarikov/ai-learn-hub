@@ -18,7 +18,7 @@ const colors = {
     muted: "rgba(16, 42, 41, 0.12)",
     mutedForeground: "#6d6059",
 
-    accent: "#ffd166",
+    accent: "#f47249",
     accentForeground: "#102a29",
 
     destructive: "#e05c5c",

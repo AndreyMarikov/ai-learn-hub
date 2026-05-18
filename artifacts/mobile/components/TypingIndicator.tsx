@@ -38,7 +38,7 @@ export function TypingIndicator() {
       <View
         style={[
           styles.bubble,
-          { backgroundColor: colors.assistantMessage },
+          { backgroundColor: colors.card },
         ]}
       >
         <View style={styles.dots}>
@@ -78,7 +78,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     borderBottomLeftRadius: 5,
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 11,
+    boxShadow: "0 1px 2px #261c140a, 0 8px 24px -12px #261c1414",
   },
   dots: {
     flexDirection: "row",

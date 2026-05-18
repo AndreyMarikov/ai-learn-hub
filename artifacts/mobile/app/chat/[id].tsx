@@ -33,6 +33,7 @@ function generateUniqueId(): string {
   msgCounter++;
   return `msg-${Date.now()}-${msgCounter}-${Math.random().toString(36).substr(2, 9)}`;
 }
+import { LinearGradient } from "expo-linear-gradient";
 
 function cleanContent(content: string): string {
   return content
@@ -373,7 +374,6 @@ export default function ChatScreen() {
           keyboardDismissMode="interactive"
           keyboardShouldPersistTaps="handled"
         />
-
         <View style={styles.inputArea}>
           <ChatInput
             onSend={handleSend}

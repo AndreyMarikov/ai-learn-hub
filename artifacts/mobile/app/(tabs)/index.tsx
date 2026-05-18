@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   FlatList,
   Platform,
@@ -10,6 +10,8 @@ import {
   Text,
   View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Redirect } from "expo-router";
 
 import { NewTopicModal } from "@/components/NewTopicModal";
 import { TopicCard } from "@/components/TopicCard";
@@ -22,6 +24,30 @@ export default function HomeScreen() {
   const colors = useColors();
   const { topics, createTopic, deleteTopic, loading } = useTopics();
   const [modalVisible, setModalVisible] = useState(false);
+  const [isFirstLaunch, setIsFirstLaunch] = useState(false);
+
+  useEffect(() => {
+    const checkFirstLaunch = async () => {
+      try {
+        const hasLaunched = await AsyncStorage.getItem('HAS_LAUNCHED');
+        if (hasLaunched === null) {
+          // This is the first time opening the app
+          await AsyncStorage.setItem('HAS_LAUNCHED', 'true');
+          setIsFirstLaunch(true);
+        } else {
+          setIsFirstLaunch(false);
+        }
+      } catch (error) {
+        setIsFirstLaunch(false);
+      }
+    };
+
+    checkFirstLaunch();
+  }, []);
+
+  if (isFirstLaunch) {
+    return <Redirect href="/onboarding" />
+  }
 
   const topPadding = Platform.OS === "web" ? 67 : 0;
   const bottomPadding = Platform.OS === "web" ? 34 : 0;

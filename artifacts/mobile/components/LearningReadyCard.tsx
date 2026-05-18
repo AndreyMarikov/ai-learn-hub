@@ -18,6 +18,7 @@ import {
   cancelTopicNotifications,
   getTopicNotificationInfo,
 } from "@/services/notifications";
+import colors from "@/constants/colors";
 
 interface LearningReadyCardProps {
   profile: LearningProfile;
@@ -49,7 +50,10 @@ function ProfileRow({
 
 type LoadingStage = "idle" | "snippets" | "scheduling";
 
-export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) {
+export function LearningReadyCard({
+  profile,
+  topicId,
+}: LearningReadyCardProps) {
   const colors = useColors();
   const { topics, setWidgetActive } = useTopics();
   const topic = topics.find((t) => t.id === topicId);
@@ -123,7 +127,10 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
       setSnippetInfo({ count: snippets.length, scheduledCount: ids.length });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
-      Alert.alert("Error", "Failed to set up learning snippets. Please try again.");
+      Alert.alert(
+        "Error",
+        "Failed to set up learning snippets. Please try again.",
+      );
     } finally {
       setLoadingStage("idle");
     }
@@ -164,7 +171,11 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
         <View
           style={[
             styles.badge,
-            { backgroundColor: isActive ? colors.accent : "rgba(255,255,255,0.3)" },
+            {
+              backgroundColor: isActive
+                ? colors.accent
+                : "rgba(255,255,255,0.3)",
+            },
           ]}
         >
           <Feather
@@ -180,11 +191,23 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
 
       <View style={styles.profileGrid}>
         <ProfileRow icon="book" label="Topic" value={profile.topic} />
-        <ProfileRow icon="bar-chart-2" label="Level" value={profile.skillLevel} />
+        <ProfileRow
+          icon="bar-chart-2"
+          label="Level"
+          value={profile.skillLevel}
+        />
         <ProfileRow icon="zap" label="Style" value={profile.learningStyle} />
-        <ProfileRow icon="clock" label="Frequency" value={profile.notificationFrequency} />
+        <ProfileRow
+          icon="clock"
+          label="Frequency"
+          value={profile.notificationFrequency}
+        />
         {profile.quietHours !== "none" && (
-          <ProfileRow icon="moon" label="Quiet hours" value={profile.quietHours} />
+          <ProfileRow
+            icon="moon"
+            label="Quiet hours"
+            value={profile.quietHours}
+          />
         )}
       </View>
 
@@ -202,7 +225,9 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
             </Text>
           </View>
           <TouchableOpacity onPress={handleRemoveWidget} activeOpacity={0.7}>
-            <Text style={[styles.removeText, { color: colors.mutedForeground }]}>
+            <Text
+              style={[styles.removeText, { color: colors.mutedForeground }]}
+            >
               Remove notifications
             </Text>
           </TouchableOpacity>
@@ -222,13 +247,11 @@ export function LearningReadyCard({ profile, topicId }: LearningReadyCardProps) 
           activeOpacity={0.8}
         >
           {isLoading ? (
-            <ActivityIndicator size="small" color={colors.accentForeground} />
+            <ActivityIndicator size="small" color={colors.card} />
           ) : (
-            <Feather name="bell" size={14} color={colors.accentForeground} />
+            <Feather name="bell" size={14} color={colors.card} />
           )}
-          <Text
-            style={[styles.widgetButtonText, { color: colors.accentForeground }]}
-          >
+          <Text style={[styles.widgetButtonText, { color: colors.card }]}>
             {loadingLabel}
           </Text>
         </TouchableOpacity>
@@ -243,11 +266,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     padding: 16,
     borderWidth: 1.5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
+    boxShadow: "0 1px 2px #261c140a, 0 8px 24px -12px #261c1414",
     gap: 12,
   },
   header: {

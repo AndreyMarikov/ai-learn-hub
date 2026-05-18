@@ -1,14 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useRef, useState } from "react";
-import {
-  Animated,
-  Platform,
-  Pressable,
-  StyleSheet,
-  TextInput,
-  View,
-} from "react-native";
+import { Animated, Pressable, StyleSheet, TextInput, View, Dimensions } from "react-native";
 import { useColors } from "@/hooks/useColors";
 
 interface ChatInputProps {
@@ -86,7 +79,12 @@ export function ChatInput({
         returnKeyType="send"
         editable={!disabled}
       />
-      <Animated.View style={{ transform: [{ scale: sendScale }] }}>
+      <Animated.View
+        style={{
+          transform: [{ scale: sendScale }],
+          alignSelf: "flex-end",
+        }}
+      >
         <Pressable
           onPress={handleSend}
           onPressIn={handleSendPressIn}
@@ -112,30 +110,48 @@ export function ChatInput({
   );
 }
 
+const screenWidth = Dimensions.get("window").width;
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    alignItems: "flex-end",
-    marginHorizontal: 16,
-    marginVertical: 10,
+
+    alignItems: "center",
+
+    marginVertical: 4,
+
     borderRadius: 30,
     borderWidth: 1,
+
     paddingLeft: 16,
-    padding: 8,
-    gap: 10,
+    paddingRight: 8,
+    paddingVertical: 8,
+
+    width: screenWidth - 6 * 2,
+    left: 6,
   },
+
   input: {
     flex: 1,
     fontSize: 15,
+
     maxHeight: 120,
-    paddingTop: Platform.OS === "ios" ? 2 : 0,
+    minHeight: 34,
+
+    textAlignVertical: "center",
+
+    paddingTop: 6,
+    paddingBottom: 6,
   },
+
   sendButton: {
     width: 34,
     height: 34,
-    borderRadius: 17,
+    borderRadius: 9999,
+
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 1,
+
+    marginLeft: 8,
   },
 });
