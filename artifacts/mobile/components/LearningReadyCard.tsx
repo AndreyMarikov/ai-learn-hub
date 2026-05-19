@@ -24,6 +24,10 @@ import {
   clearWidgetData,
   getWidgetData,
 } from "@/services/widgetData";
+import {
+  registerWidgetRotationTask,
+  unregisterWidgetRotationTask,
+} from "@/services/backgroundTask";
 import { requestWidgetUpdate } from "react-native-android-widget";
 import { SnippetWidget } from "@/widgets/SnippetWidget";
 
@@ -189,6 +193,9 @@ export function LearningReadyCard({
           snippets,
           currentIndex: 0,
           imageDataUrl,
+          profile,
+          baseUrl,
+          userId: deviceId,
         });
 
         await requestWidgetUpdate({
@@ -207,6 +214,8 @@ export function LearningReadyCard({
           },
           widgetNotFound: () => {},
         });
+
+        await registerWidgetRotationTask();
       }
 
       setWidgetActive(topicId, true);
@@ -235,6 +244,7 @@ export function LearningReadyCard({
             await cancelTopicNotifications(topicId);
             if (Platform.OS === "android") {
               await clearWidgetData();
+              await unregisterWidgetRotationTask();
             }
             setWidgetActive(topicId, false);
             setSnippetInfo(null);

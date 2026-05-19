@@ -183,6 +183,8 @@ export default function ChatScreen() {
               ? `data:${widgetImageEntry.mimeType};base64,${widgetImageEntry.base64}`
               : existingWidget?.imageDataUrl ?? null;
 
+          const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+          const bgBaseUrl = domain ? `https://${domain}` : "";
           await setWidgetData({
             topicId,
             topicTitle: profile.topic,
@@ -193,6 +195,9 @@ export default function ChatScreen() {
             ],
             currentIndex: existingWidget?.currentIndex ?? 0,
             imageDataUrl,
+            profile,
+            baseUrl: existingWidget?.baseUrl ?? bgBaseUrl,
+            userId: existingWidget?.userId ?? deviceId,
           });
 
           await requestWidgetUpdate({

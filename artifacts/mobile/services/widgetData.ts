@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import type { LearningProfile } from "@/contexts/TopicsContext";
 
 const WIDGET_DATA_KEY = "@learnflow_widget_data";
 
@@ -9,6 +10,9 @@ export interface WidgetData {
   snippets: string[];
   currentIndex: number;
   imageDataUrl: string | null;
+  profile: LearningProfile;
+  baseUrl: string;
+  userId: string;
 }
 
 export async function getWidgetData(): Promise<WidgetData | null> {

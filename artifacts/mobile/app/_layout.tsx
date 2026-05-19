@@ -20,6 +20,7 @@ import { registerWidgetTaskHandler } from "react-native-android-widget";
 import { widgetTaskHandler } from "@/widgets/widgetTaskHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TopicsProvider } from "@/contexts/TopicsContext";
+import "@/services/backgroundTask";
 
 if (Platform.OS === "android") {
   registerWidgetTaskHandler(widgetTaskHandler);
