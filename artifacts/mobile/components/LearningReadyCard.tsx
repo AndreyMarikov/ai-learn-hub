@@ -175,6 +175,7 @@ export function LearningReadyCard({
         profile.notificationFrequency,
         topicEmoji,
         snippetImages,
+        profile.quietHours,
       );
 
       setLoadingStage("widget");

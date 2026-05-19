@@ -2,6 +2,7 @@ import * as Notifications from "expo-notifications";
 import * as FileSystem from "expo-file-system";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
+import { adjustSecondsForQuietHours } from "@/services/quietHours";
 
 const STORAGE_KEY = "@learnflow_notifications_v2";
 
@@ -44,6 +45,7 @@ export async function scheduleSnippetNotifications(
   frequency: string,
   topicEmoji?: string,
   snippetImages?: Array<{ base64: string; mimeType: string } | null>,
+  quietHours?: string,
 ): Promise<string[]> {
   if (Platform.OS === "web") return [];
 
@@ -55,7 +57,10 @@ export async function scheduleSnippetNotifications(
   const notifTitle = `${emoji} ${topicTitle}`;
 
   for (let i = 0; i < snippets.length; i++) {
-    const seconds = i === 0 ? 5 : i * intervalSeconds;
+    const rawSeconds = i === 0 ? 5 : i * intervalSeconds;
+    const seconds = quietHours
+      ? adjustSecondsForQuietHours(quietHours, rawSeconds)
+      : rawSeconds;
     const imageEntry = snippetImages?.[i] ?? null;
 
     let localImageUri: string | null = null;
@@ -103,6 +108,7 @@ export async function appendSnippetNotifications(
   frequency: string,
   topicEmoji?: string,
   snippetImages?: Array<{ base64: string; mimeType: string } | null>,
+  quietHours?: string,
 ): Promise<string[]> {
   if (Platform.OS === "web") return [];
 
@@ -119,7 +125,10 @@ export async function appendSnippetNotifications(
     : 0;
 
   for (let i = 0; i < snippets.length; i++) {
-    const seconds = (existingCount + i + 1) * intervalSeconds;
+    const rawSeconds = (existingCount + i + 1) * intervalSeconds;
+    const seconds = quietHours
+      ? adjustSecondsForQuietHours(quietHours, rawSeconds)
+      : rawSeconds;
     const imageEntry = snippetImages?.[i] ?? null;
 
     let localImageUri: string | null = null;

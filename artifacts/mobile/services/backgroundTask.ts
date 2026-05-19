@@ -9,6 +9,7 @@ import {
   advanceWidgetSnippet,
 } from "@/services/widgetData";
 import { SnippetWidget } from "@/widgets/SnippetWidget";
+import { isInQuietHours } from "@/services/quietHours";
 
 export const WIDGET_ROTATION_TASK = "LEARNFLOW_WIDGET_ROTATION";
 
@@ -16,6 +17,11 @@ const LOW_SNIPPET_THRESHOLD = 10;
 
 TaskManager.defineTask(WIDGET_ROTATION_TASK, async () => {
   try {
+    const peek = await getWidgetData();
+    if (peek?.profile?.quietHours && isInQuietHours(peek.profile.quietHours)) {
+      return BackgroundFetch.BackgroundFetchResult.NoData;
+    }
+
     const data = await advanceWidgetSnippet();
     if (!data) return BackgroundFetch.BackgroundFetchResult.NoData;
 

@@ -173,6 +173,7 @@ export default function ChatScreen() {
           profile.notificationFrequency,
           topicEmoji,
           snippetImages,
+          profile.quietHours,
         );
 
         if (Platform.OS === "android") {
