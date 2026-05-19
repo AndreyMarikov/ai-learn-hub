@@ -28,6 +28,9 @@ import {
   getTopicNotificationInfo,
 } from "@/services/notifications";
 import { getDeviceId } from "@/services/deviceId";
+import { setWidgetData, getWidgetData } from "@/services/widgetData";
+import { requestWidgetUpdate } from "react-native-android-widget";
+import { SnippetWidget } from "@/widgets/SnippetWidget";
 
 let msgCounter = 0;
 function generateUniqueId(): string {
@@ -171,6 +174,44 @@ export default function ChatScreen() {
           topicEmoji,
           snippetImages,
         );
+
+        if (Platform.OS === "android") {
+          const existingWidget = await getWidgetData();
+          const widgetImageEntry = images.find((img) => img !== null) ?? null;
+          const imageDataUrl =
+            widgetImageEntry
+              ? `data:${widgetImageEntry.mimeType};base64,${widgetImageEntry.base64}`
+              : existingWidget?.imageDataUrl ?? null;
+
+          await setWidgetData({
+            topicId,
+            topicTitle: profile.topic,
+            topicEmoji,
+            snippets: [
+              ...(existingWidget?.snippets ?? []),
+              ...snippets,
+            ],
+            currentIndex: existingWidget?.currentIndex ?? 0,
+            imageDataUrl,
+          });
+
+          await requestWidgetUpdate({
+            widgetName: "SnippetWidget",
+            renderWidget: async () => {
+              const data = await getWidgetData();
+              return React.createElement(SnippetWidget, {
+                topicTitle: data?.topicTitle ?? profile.topic,
+                topicEmoji: data?.topicEmoji ?? topicEmoji,
+                snippet:
+                  data?.snippets?.[data?.currentIndex ?? 0] ??
+                  snippets[0] ??
+                  "",
+                imageDataUrl: data?.imageDataUrl ?? null,
+              });
+            },
+            widgetNotFound: () => {},
+          });
+        }
       } catch {}
     });
   }, [topic?.id, topic?.isReady, topic?.widgetActive]);

@@ -16,9 +16,14 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-
+import { registerWidgetTaskHandler } from "react-native-android-widget";
+import { widgetTaskHandler } from "@/widgets/widgetTaskHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TopicsProvider } from "@/contexts/TopicsContext";
+
+if (Platform.OS === "android") {
+  registerWidgetTaskHandler(widgetTaskHandler);
+}
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 

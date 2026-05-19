@@ -16,7 +16,9 @@
     "ios": {
       "supportsTablet": false
     },
-    "android": {},
+    "android": {
+      "package": "com.learnflow.mobile"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -28,7 +30,23 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "SnippetWidget",
+              "label": "LearnFlow",
+              "description": "Daily learning snippets delivered passively",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
+            }
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

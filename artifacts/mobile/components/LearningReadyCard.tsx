@@ -18,7 +18,14 @@ import {
   cancelTopicNotifications,
   getTopicNotificationInfo,
 } from "@/services/notifications";
-import colors from "@/constants/colors";
+import { getDeviceId } from "@/services/deviceId";
+import {
+  setWidgetData,
+  clearWidgetData,
+  getWidgetData,
+} from "@/services/widgetData";
+import { requestWidgetUpdate } from "react-native-android-widget";
+import { SnippetWidget } from "@/widgets/SnippetWidget";
 
 interface LearningReadyCardProps {
   profile: LearningProfile;
@@ -48,7 +55,7 @@ function ProfileRow({
   );
 }
 
-type LoadingStage = "idle" | "snippets" | "scheduling";
+type LoadingStage = "idle" | "snippets" | "scheduling" | "widget";
 
 export function LearningReadyCard({
   profile,
@@ -79,6 +86,7 @@ export function LearningReadyCard({
     idle: "Add widget & notifications",
     snippets: "Generating snippets...",
     scheduling: "Scheduling...",
+    widget: "Setting up widget...",
   }[loadingStage];
 
   const handleAddWidget = async () => {
@@ -115,13 +123,91 @@ export function LearningReadyCard({
       };
 
       setLoadingStage("scheduling");
+
+      const deviceId = await getDeviceId();
+
+      const IMAGE_SLOTS = 3;
+      const imageRequests = snippets
+        .slice(0, IMAGE_SLOTS)
+        .map((snippet) =>
+          fetch(`${baseUrl}/api/gemini/image`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: deviceId,
+              topic: profile.topic,
+              snippetText: snippet,
+            }),
+          })
+            .then((r) => (r.ok ? r.json() : null))
+            .then(
+              (
+                data: {
+                  imageData: string | null;
+                  mimeType: string | null;
+                  limitReached: boolean;
+                } | null,
+              ) =>
+                data?.imageData && data?.mimeType
+                  ? { base64: data.imageData, mimeType: data.mimeType }
+                  : null,
+            )
+            .catch(() => null),
+        );
+
+      const images = await Promise.all(imageRequests);
+      const snippetImages: Array<{
+        base64: string;
+        mimeType: string;
+      } | null> = [
+        ...images,
+        ...Array(Math.max(0, snippets.length - IMAGE_SLOTS)).fill(null),
+      ];
+
       const ids = await scheduleSnippetNotifications(
         topicId,
         profile.topic,
         snippets,
         profile.notificationFrequency,
         topicEmoji,
+        snippetImages,
       );
+
+      setLoadingStage("widget");
+
+      if (Platform.OS === "android") {
+        const widgetImageEntry = images.find((img) => img !== null) ?? null;
+        const imageDataUrl =
+          widgetImageEntry
+            ? `data:${widgetImageEntry.mimeType};base64,${widgetImageEntry.base64}`
+            : null;
+
+        await setWidgetData({
+          topicId,
+          topicTitle: profile.topic,
+          topicEmoji,
+          snippets,
+          currentIndex: 0,
+          imageDataUrl,
+        });
+
+        await requestWidgetUpdate({
+          widgetName: "SnippetWidget",
+          renderWidget: async () => {
+            const data = await getWidgetData();
+            return React.createElement(SnippetWidget, {
+              topicTitle: data?.topicTitle ?? profile.topic,
+              topicEmoji: data?.topicEmoji ?? topicEmoji,
+              snippet:
+                data?.snippets?.[data?.currentIndex ?? 0] ??
+                snippets[0] ??
+                "",
+              imageDataUrl: data?.imageDataUrl ?? null,
+            });
+          },
+          widgetNotFound: () => {},
+        });
+      }
 
       setWidgetActive(topicId, true);
       setSnippetInfo({ count: snippets.length, scheduledCount: ids.length });
@@ -138,7 +224,7 @@ export function LearningReadyCard({
 
   const handleRemoveWidget = async () => {
     Alert.alert(
-      "Remove notifications",
+      "Remove notifications & widget",
       "Stop receiving learning snippets for this topic?",
       [
         { text: "Cancel", style: "cancel" },
@@ -147,6 +233,9 @@ export function LearningReadyCard({
           style: "destructive",
           onPress: async () => {
             await cancelTopicNotifications(topicId);
+            if (Platform.OS === "android") {
+              await clearWidgetData();
+            }
             setWidgetActive(topicId, false);
             setSnippetInfo(null);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -223,12 +312,37 @@ export function LearningReadyCard({
             <Text style={[styles.activeInfoText, { color: colors.foreground }]}>
               {snippetInfo.scheduledCount} snippets scheduled
             </Text>
+            {Platform.OS === "android" && (
+              <>
+                <Text
+                  style={[
+                    styles.activeInfoText,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  ·
+                </Text>
+                <Feather
+                  name="layout"
+                  size={13}
+                  color={colors.mutedForeground}
+                />
+                <Text
+                  style={[
+                    styles.activeInfoText,
+                    { color: colors.mutedForeground },
+                  ]}
+                >
+                  Widget active
+                </Text>
+              </>
+            )}
           </View>
           <TouchableOpacity onPress={handleRemoveWidget} activeOpacity={0.7}>
             <Text
               style={[styles.removeText, { color: colors.mutedForeground }]}
             >
-              Remove notifications
+              Remove notifications{Platform.OS === "android" ? " & widget" : ""}
             </Text>
           </TouchableOpacity>
         </View>
@@ -249,7 +363,11 @@ export function LearningReadyCard({
           {isLoading ? (
             <ActivityIndicator size="small" color={colors.card} />
           ) : (
-            <Feather name="bell" size={14} color={colors.card} />
+            <Feather
+              name={Platform.OS === "android" ? "layout" : "bell"}
+              size={14}
+              color={colors.card}
+            />
           )}
           <Text style={[styles.widgetButtonText, { color: colors.card }]}>
             {loadingLabel}

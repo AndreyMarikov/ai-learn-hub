@@ -57,6 +57,7 @@
   "dependencies": {
     "expo-file-system": "^55.0.19",
     "expo-notifications": "~0.29.14",
+    "react-native-android-widget": "^0.20.3",
     "react-native-onboarding-swiper": "^1.4.0",
     "react-native-vector-icons": "^10.3.0"
   }
