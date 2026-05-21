@@ -23,14 +23,6 @@ import {
   type LearningProfile,
   type Message,
 } from "@/contexts/TopicsContext";
-import {
-  appendSnippetNotifications,
-  getTopicNotificationInfo,
-} from "@/services/notifications";
-import { getDeviceId } from "@/services/deviceId";
-import { setWidgetData, getWidgetData } from "@/services/widgetData";
-import { requestWidgetUpdate } from "react-native-android-widget";
-import { SnippetWidget } from "@/widgets/SnippetWidget";
 
 let msgCounter = 0;
 function generateUniqueId(): string {
@@ -103,122 +95,6 @@ export default function ChatScreen() {
       setHeaderTitle(topic.title);
     }
   }, [topic?.title]);
-
-  useEffect(() => {
-    if (!topic?.isReady || !topic?.widgetActive || !topic?.learningProfile)
-      return;
-    const profile = topic.learningProfile;
-    const topicId = topic.id;
-
-    getTopicNotificationInfo(topicId).then(async (info) => {
-      if (!info || info.scheduledCount >= 15) return;
-
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3001";
-      try {
-        const res = await fetch(`${baseUrl}/api/gemini/snippets`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ profile }),
-        });
-        if (!res.ok) return;
-        const { snippets, topicEmoji } = (await res.json()) as {
-          snippets: string[];
-          topicEmoji: string;
-        };
-
-        const deviceId = await getDeviceId();
-        const IMAGE_SLOTS = 3;
-        const imageRequests = snippets
-          .slice(0, IMAGE_SLOTS)
-          .map((snippet) =>
-            fetch(`${baseUrl}/api/gemini/image`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                userId: deviceId,
-                topic: profile.topic,
-                snippetText: snippet,
-              }),
-            })
-              .then((r) => (r.ok ? r.json() : null))
-              .then(
-                (
-                  data: {
-                    imageData: string | null;
-                    mimeType: string | null;
-                    limitReached: boolean;
-                  } | null,
-                ) =>
-                  data?.imageData && data?.mimeType
-                    ? { base64: data.imageData, mimeType: data.mimeType }
-                    : null,
-              )
-              .catch(() => null),
-          );
-
-        const images = await Promise.all(imageRequests);
-        const snippetImages: Array<{
-          base64: string;
-          mimeType: string;
-        } | null> = [
-          ...images,
-          ...Array(Math.max(0, snippets.length - IMAGE_SLOTS)).fill(null),
-        ];
-
-        await appendSnippetNotifications(
-          topicId,
-          profile.topic,
-          snippets,
-          profile.notificationFrequency,
-          topicEmoji,
-          snippetImages,
-          profile.quietHours,
-        );
-
-        if (Platform.OS === "android") {
-          const existingWidget = await getWidgetData();
-          const widgetImageEntry = images.find((img) => img !== null) ?? null;
-          const imageDataUrl =
-            widgetImageEntry
-              ? `data:${widgetImageEntry.mimeType};base64,${widgetImageEntry.base64}`
-              : existingWidget?.imageDataUrl ?? null;
-
-          const bgBaseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3001";
-          await setWidgetData({
-            topicId,
-            topicTitle: profile.topic,
-            topicEmoji,
-            snippets: [
-              ...(existingWidget?.snippets ?? []),
-              ...snippets,
-            ],
-            currentIndex: existingWidget?.currentIndex ?? 0,
-            imageDataUrl,
-            profile,
-            baseUrl: existingWidget?.baseUrl ?? bgBaseUrl,
-            userId: existingWidget?.userId ?? deviceId,
-          });
-
-          await requestWidgetUpdate({
-            widgetName: "SnippetWidget",
-            renderWidget: async () => {
-              const data = await getWidgetData();
-              return React.createElement(SnippetWidget, {
-                topicTitle: data?.topicTitle ?? profile.topic,
-                topicEmoji: data?.topicEmoji ?? topicEmoji,
-                snippet:
-                  data?.snippets?.[data?.currentIndex ?? 0] ??
-                  snippets[0] ??
-                  "",
-                imageDataUrl: data?.imageDataUrl ?? null,
-              });
-            },
-            widgetNotFound: () => {},
-          });
-        }
-      } catch {}
-    });
-  }, [topic?.id, topic?.isReady, topic?.widgetActive]);
 
   const doStream = useCallback(
     async (currentMessages: Message[], isFirstMessage = false) => {

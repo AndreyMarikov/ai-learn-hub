@@ -14,11 +14,10 @@ import { useColors } from "@/hooks/useColors";
 import { useTopics, type LearningProfile } from "@/contexts/TopicsContext";
 import {
   requestNotificationPermissions,
-  scheduleSnippetNotifications,
   cancelTopicNotifications,
-  getTopicNotificationInfo,
 } from "@/services/notifications";
 import { getDeviceId } from "@/services/deviceId";
+import { getExpoPushToken } from "@/services/pushToken";
 import {
   setWidgetData,
   clearWidgetData,
@@ -71,25 +70,13 @@ export function LearningReadyCard({
   const isActive = topic?.widgetActive ?? false;
 
   const [loadingStage, setLoadingStage] = useState<LoadingStage>("idle");
-  const [snippetInfo, setSnippetInfo] = useState<{
-    count: number;
-    scheduledCount: number;
-  } | null>(null);
 
   const isLoading = loadingStage !== "idle";
 
-  useEffect(() => {
-    if (isActive) {
-      getTopicNotificationInfo(topicId).then((info) => {
-        if (info) setSnippetInfo(info);
-      });
-    }
-  }, [isActive, topicId]);
-
   const loadingLabel = {
     idle: "Add widget & notifications",
-    snippets: "Generating snippets...",
-    scheduling: "Scheduling...",
+    snippets: "Preparing your first snippet...",
+    scheduling: "Setting up delivery...",
     widget: "Setting up widget...",
   }[loadingStage];
 
@@ -114,84 +101,76 @@ export function LearningReadyCard({
 
       const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
       const baseUrl = domain ? `https://${domain}` : "";
+      const deviceId = await getDeviceId();
+      const pushToken = await getExpoPushToken();
 
       const snippetsRes = await fetch(`${baseUrl}/api/gemini/snippets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profile }),
+        body: JSON.stringify({ profile, count: 1 }),
       });
-      if (!snippetsRes.ok) throw new Error("Failed to generate snippets");
-      const { snippets, topicEmoji } = (await snippetsRes.json()) as {
-        snippets: string[];
-        topicEmoji: string;
-      };
+      if (!snippetsRes.ok) throw new Error("Failed to generate snippet");
+      const { snippets: initialSnippets, topicEmoji } =
+        (await snippetsRes.json()) as {
+          snippets: string[];
+          topicEmoji: string;
+        };
+      const firstSnippet = initialSnippets[0] ?? "";
+
+      const imageRes = await fetch(`${baseUrl}/api/gemini/image`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: deviceId,
+          topic: profile.topic,
+          snippetText: firstSnippet,
+        }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then(
+          (
+            data: {
+              imageData: string | null;
+              mimeType: string | null;
+              limitReached: boolean;
+            } | null,
+          ) =>
+            data?.imageData && data?.mimeType
+              ? { base64: data.imageData, mimeType: data.mimeType }
+              : null,
+        )
+        .catch(() => null);
 
       setLoadingStage("scheduling");
 
-      const deviceId = await getDeviceId();
-
-      const IMAGE_SLOTS = 3;
-      const imageRequests = snippets
-        .slice(0, IMAGE_SLOTS)
-        .map((snippet) =>
-          fetch(`${baseUrl}/api/gemini/image`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              userId: deviceId,
-              topic: profile.topic,
-              snippetText: snippet,
-            }),
-          })
-            .then((r) => (r.ok ? r.json() : null))
-            .then(
-              (
-                data: {
-                  imageData: string | null;
-                  mimeType: string | null;
-                  limitReached: boolean;
-                } | null,
-              ) =>
-                data?.imageData && data?.mimeType
-                  ? { base64: data.imageData, mimeType: data.mimeType }
-                  : null,
-            )
-            .catch(() => null),
-        );
-
-      const images = await Promise.all(imageRequests);
-      const snippetImages: Array<{
-        base64: string;
-        mimeType: string;
-      } | null> = [
-        ...images,
-        ...Array(Math.max(0, snippets.length - IMAGE_SLOTS)).fill(null),
-      ];
-
-      const ids = await scheduleSnippetNotifications(
-        topicId,
-        profile.topic,
-        snippets,
-        profile.notificationFrequency,
-        topicEmoji,
-        snippetImages,
-        profile.quietHours,
-      );
+      if (pushToken) {
+        await fetch(`${baseUrl}/api/notifications/subscribe`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: deviceId,
+            pushToken,
+            topicId,
+            topicTitle: profile.topic,
+            topicEmoji,
+            profile,
+            quietHours: profile.quietHours,
+          }),
+        });
+      }
 
       setLoadingStage("widget");
 
       if (Platform.OS === "android") {
-        const widgetImageEntry = images.find((img) => img !== null) ?? null;
-        const imageDataUrl =
-          widgetImageEntry
-            ? `data:${widgetImageEntry.mimeType};base64,${widgetImageEntry.base64}`
-            : null;
+        const imageDataUrl = imageRes
+          ? `data:${imageRes.mimeType};base64,${imageRes.base64}`
+          : null;
 
         await setWidgetData({
           topicId,
           topicTitle: profile.topic,
           topicEmoji,
-          snippets,
+          snippets: firstSnippet ? [firstSnippet] : [],
           currentIndex: 0,
           imageDataUrl,
           profile,
@@ -206,10 +185,7 @@ export function LearningReadyCard({
             return React.createElement(SnippetWidget, {
               topicTitle: data?.topicTitle ?? profile.topic,
               topicEmoji: data?.topicEmoji ?? topicEmoji,
-              snippet:
-                data?.snippets?.[data?.currentIndex ?? 0] ??
-                snippets[0] ??
-                "",
+              snippet: data?.snippets?.[0] ?? firstSnippet,
               imageDataUrl: data?.imageDataUrl ?? null,
             });
           },
@@ -220,7 +196,6 @@ export function LearningReadyCard({
       }
 
       setWidgetActive(topicId, true);
-      setSnippetInfo({ count: snippets.length, scheduledCount: ids.length });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {
       Alert.alert(
@@ -242,13 +217,23 @@ export function LearningReadyCard({
           text: "Remove",
           style: "destructive",
           onPress: async () => {
+            const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+            const baseUrl = domain ? `https://${domain}` : "";
+            const deviceId = await getDeviceId();
+
             await cancelTopicNotifications(topicId);
+
+            await fetch(`${baseUrl}/api/notifications/unsubscribe`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: deviceId, topicId }),
+            }).catch(() => {});
+
             if (Platform.OS === "android") {
               await clearWidgetData();
               await unregisterWidgetRotationTask();
             }
             setWidgetActive(topicId, false);
-            setSnippetInfo(null);
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           },
         },
@@ -311,7 +296,7 @@ export function LearningReadyCard({
         )}
       </View>
 
-      {isActive && snippetInfo ? (
+      {isActive ? (
         <View style={styles.activeInfo}>
           <View
             style={[
@@ -321,7 +306,7 @@ export function LearningReadyCard({
           >
             <Feather name="bell" size={13} color={colors.accent} />
             <Text style={[styles.activeInfoText, { color: colors.foreground }]}>
-              {snippetInfo.scheduledCount} snippets scheduled
+              Smart delivery active
             </Text>
             {Platform.OS === "android" && (
               <>

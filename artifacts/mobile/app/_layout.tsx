@@ -16,11 +16,13 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { registerWidgetTaskHandler } from "react-native-android-widget";
+import { registerWidgetTaskHandler, requestWidgetUpdate } from "react-native-android-widget";
 import { widgetTaskHandler } from "@/widgets/widgetTaskHandler";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { TopicsProvider } from "@/contexts/TopicsContext";
 import "@/services/backgroundTask";
+import { getWidgetData, setWidgetData } from "@/services/widgetData";
+import { SnippetWidget } from "@/widgets/SnippetWidget";
 
 if (Platform.OS === "android") {
   registerWidgetTaskHandler(widgetTaskHandler);
@@ -35,6 +37,41 @@ if (Platform.OS !== "web") {
       shouldPlaySound: true,
       shouldSetBadge: false,
     }),
+  });
+
+  Notifications.addNotificationReceivedListener((notification) => {
+    if (Platform.OS !== "android") return;
+    const data = notification.request.content.data as {
+      snippet?: string;
+      topicId?: string;
+    } | null;
+    const snippet = data?.snippet;
+    if (!snippet) return;
+
+    getWidgetData()
+      .then(async (current) => {
+        if (!current) return;
+        const updated = {
+          ...current,
+          snippets: [...current.snippets, snippet],
+        };
+        await setWidgetData(updated);
+        await requestWidgetUpdate({
+          widgetName: "SnippetWidget",
+          renderWidget: async () => {
+            const latest = await getWidgetData();
+            return React.createElement(SnippetWidget, {
+              topicTitle: latest?.topicTitle ?? current.topicTitle,
+              topicEmoji: latest?.topicEmoji ?? current.topicEmoji,
+              snippet:
+                latest?.snippets?.[latest?.currentIndex ?? 0] ?? snippet,
+              imageDataUrl: latest?.imageDataUrl ?? null,
+            });
+          },
+          widgetNotFound: () => {},
+        });
+      })
+      .catch(() => {});
   });
 }
 
