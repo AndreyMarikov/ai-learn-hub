@@ -17,7 +17,7 @@ import { TopicCard } from "@/components/TopicCard";
 import { useColors } from "@/hooks/useColors";
 import { useTopics } from "@/contexts/TopicsContext";
 import { cancelTopicNotifications } from "@/services/notifications";
-import { useFonts, Nunito_700Bold } from "@expo-google-fonts/nunito";
+import { useFonts } from "@expo-google-fonts/nunito";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -26,7 +26,7 @@ export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
   const [fontsLoaded] = useFonts({
-    Nunito_700Bold,
+    "Nunito-Bold": require("./assets/fonts/Nunito-Bold.ttf")
   })
 
   useEffect(() => {
@@ -160,7 +160,7 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 28,
-    fontFamily: "Nunito_700Bold",
+    fontFamily: "Nunito-Bold",
     fontWeight: "bold",
     letterSpacing: -0.5,
   },
