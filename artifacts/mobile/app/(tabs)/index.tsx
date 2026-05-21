@@ -26,7 +26,7 @@ export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
   const [fontsLoaded] = useFonts({
-    "Nunito-Bold": require("../../assets/fonts/Nunito-Bold.ttf")
+    "Nunito-Bold": require("../../assets/fonts/Nunito-Bold.ttf"),
   });
 
   useEffect(() => {

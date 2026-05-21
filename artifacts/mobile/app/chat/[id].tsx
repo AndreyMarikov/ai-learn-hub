@@ -1,5 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { fetch } from "expo/fetch";
+import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -29,7 +30,6 @@ function generateUniqueId(): string {
   msgCounter++;
   return `msg-${Date.now()}-${msgCounter}-${Math.random().toString(36).substr(2, 9)}`;
 }
-import { LinearGradient } from "expo-linear-gradient";
 
 function cleanContent(content: string): string {
   return content
@@ -103,7 +103,7 @@ export default function ChatScreen() {
       setIsStreaming(true);
       setShowTyping(true);
 
-      const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3001";
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080";
       let fullContent = "";
       let assistantMsgId = "";
 
@@ -234,7 +234,8 @@ export default function ChatScreen() {
         } else {
           saveMessages(id ?? "", messagesWithAI);
         }
-      } catch {
+      } catch (error) {
+        console.warn("Gemini chat failed", error instanceof Error ? error.message : error);
         setShowTyping(false);
         const errorMsg: Message = {
           id: generateUniqueId(),
