@@ -26,16 +26,16 @@ export default function HomeScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
   const [fontsLoaded] = useFonts({
-    "Nunito-Bold": require("./assets/fonts/Nunito-Bold.ttf")
-  })
+    "Nunito-Bold": require("../../assets/fonts/Nunito-Bold.ttf")
+  });
 
   useEffect(() => {
     const checkFirstLaunch = async () => {
       try {
-        const hasLaunched = await AsyncStorage.getItem('HAS_LAUNCHED');
+        const hasLaunched = await AsyncStorage.getItem("HAS_LAUNCHED");
         if (hasLaunched === null) {
           // This is the first time opening the app
-          await AsyncStorage.setItem('HAS_LAUNCHED', 'true');
+          await AsyncStorage.setItem("HAS_LAUNCHED", "true");
           setIsFirstLaunch(true);
         } else {
           setIsFirstLaunch(false);
