@@ -26,7 +26,7 @@ if (Platform.OS === "android") {
   registerWidgetTaskHandler(widgetTaskHandler);
 }
 
-setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
+setBaseUrl(process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3001");
 
 if (Platform.OS !== "web") {
   Notifications.setNotificationHandler({

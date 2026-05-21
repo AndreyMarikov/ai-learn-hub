@@ -113,8 +113,7 @@ export default function ChatScreen() {
     getTopicNotificationInfo(topicId).then(async (info) => {
       if (!info || info.scheduledCount >= 15) return;
 
-      const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
-      const baseUrl = domain ? `https://${domain}` : "";
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3001";
       try {
         const res = await fetch(`${baseUrl}/api/gemini/snippets`, {
           method: "POST",
@@ -184,8 +183,7 @@ export default function ChatScreen() {
               ? `data:${widgetImageEntry.mimeType};base64,${widgetImageEntry.base64}`
               : existingWidget?.imageDataUrl ?? null;
 
-          const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
-          const bgBaseUrl = domain ? `https://${domain}` : "";
+          const bgBaseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3001";
           await setWidgetData({
             topicId,
             topicTitle: profile.topic,
@@ -229,8 +227,7 @@ export default function ChatScreen() {
       setIsStreaming(true);
       setShowTyping(true);
 
-      const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
-      const baseUrl = domain ? `https://${domain}` : "";
+      const baseUrl = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3001";
       let fullContent = "";
       let assistantMsgId = "";
 
