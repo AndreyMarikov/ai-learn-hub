@@ -6,11 +6,19 @@ const { Pool } = pg;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
+    "DATABASE_URL must be set. Add your Supabase connection string to .env.local",
   );
 }
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const isLocal =
+  process.env.DATABASE_URL.includes("localhost") ||
+  process.env.DATABASE_URL.includes("127.0.0.1");
+
+export const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: isLocal ? false : { rejectUnauthorized: false },
+});
+
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
