@@ -4,7 +4,6 @@ import { useRouter } from "expo-router";
 import React, { useState, useEffect } from "react";
 import {
   FlatList,
-  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -18,6 +17,7 @@ import { TopicCard } from "@/components/TopicCard";
 import { useColors } from "@/hooks/useColors";
 import { useTopics } from "@/contexts/TopicsContext";
 import { cancelTopicNotifications } from "@/services/notifications";
+import { useFonts, Nunito_700Bold } from "@expo-google-fonts/nunito";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -25,6 +25,9 @@ export default function HomeScreen() {
   const { topics, createTopic, deleteTopic, loading } = useTopics();
   const [modalVisible, setModalVisible] = useState(false);
   const [isFirstLaunch, setIsFirstLaunch] = useState(false);
+  const [fontsLoaded] = useFonts({
+    Nunito_700Bold,
+  })
 
   useEffect(() => {
     const checkFirstLaunch = async () => {
@@ -49,9 +52,6 @@ export default function HomeScreen() {
     return <Redirect href="/onboarding" />
   }
 
-  const topPadding = Platform.OS === "web" ? 67 : 0;
-  const bottomPadding = Platform.OS === "web" ? 34 : 0;
-
   const handleCreate = (initialMessage: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const topic = createTopic(initialMessage);
@@ -72,8 +72,8 @@ export default function HomeScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.header]}>
-        <Text style={[styles.appName, { color: colors.foreground }]}>
-          LearnFlow
+        <Text style={[styles.appName, { color: colors.accent }]}>
+          Absorbly
         </Text>
         <Pressable
           onPress={() => {
@@ -160,7 +160,8 @@ const styles = StyleSheet.create({
   },
   appName: {
     fontSize: 28,
-    fontFamily: "serif",
+    fontFamily: "Nunito_700Bold",
+    fontWeight: "bold",
     letterSpacing: -0.5,
   },
   newButton: {

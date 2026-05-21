@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     flex: 1,
     fontSize: 16,
-    fontFamily: "serif",
+    fontFamily: "sans-serif",
     textAlign: "center",
   },
   listContent: {

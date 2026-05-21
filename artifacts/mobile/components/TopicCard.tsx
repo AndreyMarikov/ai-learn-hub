@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 15,
-    fontFamily: "serif",
+    fontFamily: "sans-serif",
     flex: 1,
   },
   badges: {
